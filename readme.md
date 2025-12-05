@@ -41,7 +41,9 @@ proc update(dt: float) =
         quit()
 
 proc draw() =
-    clear(Black)
+    setColor(Black)
+    clear()
+    setColor(White)
     draw(sampleText,100,100)
 
 run( "sample game",load update, draw)
