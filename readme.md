@@ -82,7 +82,7 @@ run(title:string,load: proc(), update: proc(dt:float), draw: proc(), config : pr
 
 ### GRAPHICS
 #Coordinate System
-applyTransform*(t: Transform)  #applies the given Transform object to the current coordinate transformation.	
+applyTransform(t: Transform)  #applies the given Transform object to the current coordinate transformation.	
 origin()   #resets the current coordinate transformation. 
 push()     #copies and pushes the current coordinate transformation to the transformation stack.
 pop()      #pops the current coordinate transformation from the transformation stack.
@@ -98,15 +98,15 @@ replaceTransform(t: Transform)    #replaces the current coordinate transformatio
 newTexture(filename:string):Texture    #creates a new Texture.
 newText(text:string, font:ptr rl.Font):Text    #creates a new drawable Text object.
 newFont(filename:string):Font  #creates a new Font
-newQuad*(x,y,width,height,sw,sh:int):Quad  #creates a new Quad.
-newQuad*(x,y,width,height:int, texture:var Texture):Quad   #creates a new Quad.
-newSpriteBatch*(texture:var Texture, maxSprites:int=1000): SpriteBatch     #creates a new SpriteBatch
+newQuad(x,y,width,height,sw,sh:int):Quad  #creates a new Quad.
+newQuad(x,y,width,height:int, texture:var Texture):Quad   #creates a new Quad.
+newSpriteBatch(texture:var Texture, maxSprites:int=1000): SpriteBatch     #creates a new SpriteBatch
 
 #Drawing State
 setColor (r:uint8, g:uint8,b:uint8, a:uint8)  #sets the color used for drawing.
 setColor (color:Color)     #sets the color used for drawing.	
-getColor * () :Color   #gets the current color
-setLine*(width:float)  #sets the line width.
+getColor () :Color   #gets the current color
+setLine(width:float)  #sets the line width.
 getLine():float   #gets the current line width
 setFont(font:rl.Font) #sets the font
 getFont() :Font   #gets the current font
@@ -143,72 +143,72 @@ setSoundPan(sound:Sound)    #sets the pan of the specified sound
 
 ### INPUTS
 #Keyboard
-isKeyPressed*(key:rl.KeyboardKey):bool     #checks if a key has been pressed once
+isKeyPressed(key:rl.KeyboardKey):bool     #checks if a key has been pressed once
 
-isKeyReleased*(key:rl.KeyboardKey):bool        #checks if a key has been released once
+isKeyReleased(key:rl.KeyboardKey):bool        #checks if a key has been released once
 
-isKeyDown*(key:rl.KeyboardKey):bool        #checks if a key is being pressed
+isKeyDown(key:rl.KeyboardKey):bool        #checks if a key is being pressed
 
-isKeyUp*(key:rl.KeyboardKey):bool      #checks if a key is not being pressed
+isKeyUp(key:rl.KeyboardKey):bool      #checks if a key is not being pressed
 
-getCharPressed*():int32        #get char pressed (unicode), call it multiple times for chars queued, returns 0 when the queue is empty
+getCharPressed():int32        #get char pressed (unicode), call it multiple times for chars queued, returns 0 when the queue is empty
 
 #Mouse
-isMouseButtonPressed*(button:rl.MouseButton):bool   #checks if a mouse button has been pressed once
+isMouseButtonPressed(button:rl.MouseButton):bool   #checks if a mouse button has been pressed once
 
-isMouseButtonReleased*(button:rl.MouseButton):bool  #checks if a mouse button has been released once
+isMouseButtonReleased(button:rl.MouseButton):bool  #checks if a mouse button has been released once
 
-isMouseButtonDown*(button:rl.MouseButton):bool  #checks if a mouse button is being pressed
+isMouseButtonDown(button:rl.MouseButton):bool  #checks if a mouse button is being pressed
 
-isMouseButtonUp*(button:rl.MouseButton):bool    #checks if a mouse button is not being pressed
+isMouseButtonUp(button:rl.MouseButton):bool    #checks if a mouse button is not being pressed
 
-getMouseX*():int    #returns mouse position x
+getMouseX():int    #returns mouse position x
 
-getMouseY*():int    #returns mouse position y
+getMouseY():int    #returns mouse position y
 
 #Gamepad
-isGamepadAvailable*(gamepad:int):bool       #checks if a gamepad is available
+isGamepadAvailable(gamepad:int):bool       #checks if a gamepad is available
 
-getGamepadName*(gamepad:int):string     #returns gamepad internal name id
+getGamepadName(gamepad:int):string     #returns gamepad internal name id
 
-isGamepadButtonPressed*(gamepad:int, button:rl.GamepadButton):bool      #checks if a gamepad button has been pressed once
+isGamepadButtonPressed(gamepad:int, button:rl.GamepadButton):bool      #checks if a gamepad button has been pressed once
 
-isGamepadButtonReleased*(gamepad:int, button:rl.GamepadButton):bool     #checks if a gamepad button has been released once
+isGamepadButtonReleased(gamepad:int, button:rl.GamepadButton):bool     #checks if a gamepad button has been released once
 
-isGamepadButtonDown*(gamepad:int, button:rl.GamepadButton):bool     #checks if a gamepad button is being pressed
+isGamepadButtonDown(gamepad:int, button:rl.GamepadButton):bool     #checks if a gamepad button is being pressed
 
-isGamepadButtonUp*(gamepad:int, button:rl.GamepadButton):bool       #checks if a gamepad button is not being pressed
+isGamepadButtonUp(gamepad:int, button:rl.GamepadButton):bool       #checks if a gamepad button is not being pressed
 
-getGamepadAxisCount*(gamepad:int):int       #returns gamepad axis count for a gamepad
+getGamepadAxisCount(gamepad:int):int       #returns gamepad axis count for a gamepad
 
-getGamepadAxisMovement*(gamepad:int, axis:rl.GamepadAxis):float     #returns axis movement value for a gamepad axis
+getGamepadAxisMovement(gamepad:int, axis:rl.GamepadAxis):float     #returns axis movement value for a gamepad axis
 
-setGamepadMappings*(mappings:string): int32     #set internal gamepad mappings (SDL_GameControllerDB)
+setGamepadMappings(mappings:string): int32     #set internal gamepad mappings (SDL_GameControllerDB)
 
-setGamepadVibration*(gamepad:int, leftMotor:float, rightMotor:float, duration:float)   #set gamepad vibration for both motors (duration in seconds)
+setGamepadVibration(gamepad:int, leftMotor:float, rightMotor:float, duration:float)   #set gamepad vibration for both motors (duration in seconds)
 
 #Touch
-getTouchX*():int    #get touch position x for touch point 0 (relative to screen size)
+getTouchX():int    #get touch position x for touch point 0 (relative to screen size)
 
-getTouchY*():int    #get touch position Y for touch point 0 (relative to screen size)
+getTouchY():int    #get touch position Y for touch point 0 (relative to screen size)
 
-getTouchPointId*(index:int):int     #get touch point identifier for given index
+getTouchPointId(index:int):int     #get touch point identifier for given index
 
-getTouchPointCount*():int   #get number of touch points
+getTouchPointCount():int   #get number of touch points
 
-getTouchHoldDuration*(index:int):float  #get touch hold time in seconds
+getTouchHoldDuration(index:int):float  #get touch hold time in seconds
 
-getTouchDragX*(index:int):float     #get touch drag vector x
+getTouchDragX(index:int):float     #get touch drag vector x
 
-getTouchDragY*(index:int):float     #get touch drag vector y
+getTouchDragY(index:int):float     #get touch drag vector y
 
-getTouchDragAngle*():float  #get touch drag angle
+getTouchDragAngle():float  #get touch drag angle
 
-getTouchPinchX*() :float    #get gesture pinch delta x
+getTouchPinchX() :float    #get gesture pinch delta x
 
-getTouchPinchY*() :float    #get gesture pinch delta y
+getTouchPinchY() :float    #get gesture pinch delta y
 
-getTouchPinchAngle*():float     #get gesture pinch angle
+getTouchPinchAngle():float     #get gesture pinch angle
 
 #WINDOW
 setFullScreenMode(value:bool)   #sets window state: fullscreen/windowed, resizes monitor to match window resolution
@@ -220,7 +220,7 @@ setMinSize(width:int=1,height:int=1)  #sets window minimum dimensions (for resiz
 setFocused()   #sets window focused
 isFocused(): bool  #checks if window is currently focused
 isResized(): bool  #checks if window has been resized last frame
-setTitle*(title:string)    #sets title for window
+setTitle(title:string)    #sets title for window
 getWidth() : int   #returns current window width
 getHeight() : int  #returns current window height
 ```
