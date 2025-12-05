@@ -1,5 +1,9 @@
 
-![logo](media/logo.png)
+<div align="center">
+
+![logo](media/logo.png) 
+
+</div>
 
 A lightweight 2D game framework featuring a clean, LÖVE2D-inspired graphics API (LÖVE2D developers will feel right at home). It uses Naylib (Raylib) as its well-maintained cross-platform backend within the Nim ecosystem.
 
