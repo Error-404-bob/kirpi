@@ -99,8 +99,8 @@ config(settings:AppSettings) = # which is used to config the game app
     settings.window.fullscreen=false
     settings.window.alwaysOnTop=false
 
-GetFramesPerSecond() # Returns FPS
-GetFrameMiliseconds() # Returns time in seconds for last frame (delta time)
+getFramesPerSecond() # Returns FPS
+getFrameMiliseconds() # Returns time in seconds for last frame (delta time)
 
 #  opens a window and runs the game 
 run(title:string,load: proc(), update: proc(dt:float), draw: proc(), config : proc (settings : var AppSettings)=nil)  
