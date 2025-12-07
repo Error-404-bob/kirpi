@@ -1,7 +1,6 @@
 import raylib as rl
 import tables
 
-
 type 
     SoundType* = enum
         Static,
@@ -30,9 +29,6 @@ proc `=destroy`(sound:var Sound) =
     elif sound.sourceType==SoundType.Static:
         `=destroy`(sound.sourceStatic)
     
-        
-  
-
 
 # Sound
 proc newSound*(fileName:string, soundType:SoundType):Sound =
@@ -102,4 +98,4 @@ proc setSoundPan*(sound:Sound, pan:float) =
         rl.setMusicPan(soundStreamSources[sound.sourceStreamID], pan)
 
 
-export  rl.updateMusicStream
+

@@ -2,6 +2,8 @@ import raylib as rl
 import raymath as rm
 import rlgl as rlgl
 
+import tables,os,hashes
+
 import math
 import triangulator
 
@@ -111,12 +113,13 @@ type
     Default,
     Nearest,
     Linear
+  
+  Font* = object
+    id:Hash
+  
   Text* = object 
     str:string=""
-    font:ptr rl.Font
-
-  Font * = object
-    rFont: rl.Font
+    font:Font
 
   Texture *  = object
     rTexture: rl.Texture2D
@@ -145,20 +148,17 @@ type
   DrawModes* = enum Fill,Line
   ArcType* = enum Pie,Open,Closed
 
-#Properties
+#Resource IDs
+var nextFontID=0
+
+#Resource Collections
+var fonts*: Table[Hash, rl.Font] =initTable[Hash, rl.Font]()
+
+
+    
+
+
 var defaultFilter*:TextureFilters=TextureFilters.Linear
-var drawerColor:Color=Color()
-var drawerLineWidth:float=1.0f
-var currentFont:rl.Font = getFontDefault()
-
-
-proc setFont*(font:rl.Font) =
-  currentFont=font
-
-proc getFont*():ptr rl.Font =
-  result=addr currentFont
-
-
 
 #Creators
 proc newTexture*(filename:string, filter:TextureFilters=Default):Texture =
@@ -166,17 +166,34 @@ proc newTexture*(filename:string, filter:TextureFilters=Default):Texture =
   result.width=float(result.rTexture.width)
   result.height=float(result.rTexture.height)
   result.filter=filter
+  if filter==TextureFilters.Default :
+    if defaultFilter==TextureFilters.Linear :
+      setTextureFilter(result.rTexture,TextureFilter.Bilinear)
+    else :
+      setTextureFilter(result.rTexture,TextureFilter.Point)
+  else :
+    if filter==TextureFilters.Linear :
+      setTextureFilter(result.rTexture,TextureFilter.Bilinear)
+    else :
+      setTextureFilter(result.rTexture,TextureFilter.Point)
   
 
-proc newImage*(filename:string):rl.Image =
-  var img=loadImage(filename)
-  result=img
+proc newFont*(filename:string, antialias:bool=true): Font =
+  var normalizedPath=filename.normalizedPath()
+  var hashID:Hash=normalizedPath.hash()
+  result=Font(id:hashID)
+  if fonts.hasKey(hashID)==false :
+    fonts[hashID]=rl.loadFont(filename)
+    if antialias :
+      setTextureFilter(fonts[hashID].texture,TextureFilter.Bilinear)
+    
+
   
 
-
-
-proc newText*(text:string, font:ptr rl.Font):Text =
+proc newText*(text:string, font:Font):Text =
   result=Text(str:text,font:font)
+
+
 
 
 #Quad
@@ -223,7 +240,22 @@ proc clear*(spriteBatch: var SpriteBatch) =
   
 
 
+#Properties
+var defaultFont*:Font
 
+var drawerColor:Color=Color()
+var drawerLineWidth:float=1.0f
+var currentFont:Font = defaultFont
+
+
+proc setFont*(font:Font) =
+  currentFont=font
+
+proc getFont*():Font =
+  result=currentFont
+
+proc getDefaultFont*():Font =
+  result=defaultFont
 
 
 proc setColor* (r:uint8, g:uint8,b:uint8, a:uint8) =
@@ -274,11 +306,12 @@ proc line*(points:varargs[float]) =
   for i in countup(0, points.len - 1, 2):
     let (px, py) = transformPoint(points[i], points[i+1])
     allPoints.add(Vector2(x:px, y:py))
-  
-  for i in countup(0, allPoints.len - 2, 1):
-    let p1 = allPoints[i]
-    let p2 = allPoints[i+1]
-    drawLine(p1, p2, drawerLineWidth, drawerColor)
+
+  if drawerLineWidth==1.0 :
+    for i in countup(0, allPoints.len - 2, 1):
+      let p1 = allPoints[i]
+      let p2 = allPoints[i+1]
+      drawLine(p1, p2, drawerLineWidth, drawerColor)
 
 proc getArcPoints(x:float,y:float,radiusX:float,radiusY:float,angle1:float,angle2:float,segments:int=16):seq[float] =
   var angleBegin=angle1
@@ -339,6 +372,9 @@ proc circle*(mode:DrawModes,x:float,y:float,radius:float) =
 
 proc clear*() =
     clearBackground(drawerColor)
+
+proc clear*(color:Color) =
+    clearBackground(color)
 
 
 proc rectangle*(mode:DrawModes,x:float,y:float,width:float,height:float,rx:float=0,ry:float=rx,segments:int=12)=
@@ -524,7 +560,8 @@ proc draw * ( spriteBatch:SpriteBatch, x:float=0,y:float=0) =
 
 proc draw*( text:Text ,x:float=0.0,y:float=0.0, size:float=16, spacing:float=1.0 ) =
 
-  if text.font==nil :
+  
+  if isFontValid(fonts[text.font.id])==false :
     echo "Warning: font is nil, cannot draw text."
     return
 
@@ -539,7 +576,8 @@ proc draw*( text:Text ,x:float=0.0,y:float=0.0, size:float=16, spacing:float=1.0
   pushMatrix()
   multMatrixf(matrixArray)
   translatef(x,y,0.0)
-  drawText(text.font[],text.str, Vector2(x:0, y:0),Vector2(x:0,y:0),0, size, spacing, drawerColor)
+  drawText(fonts[text.font.id],text.str, Vector2(x:0, y:0),Vector2(x:0,y:0),0, size, spacing, drawerColor)
+  
   
   popMatrix()
   discard

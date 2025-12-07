@@ -19,6 +19,8 @@ proc config(settings:var AppSettings) =
     settings.window.height=600
     settings.window.resizeable=false
     settings.window.fullscreen=false
+    settings.printFrameTime=true
+    settings.printFPS=true
 
 proc load() =
     sampleTexture=newTexture("resources/mario.png")
@@ -43,12 +45,11 @@ proc load() =
     walkAnim.add( newQuad(672,512,96,128,atlasTexture) )
     
 
-    
 
 var angle=0.0
 
 proc update(dt:float) =
-    
+    echo dt
     if isKeyDown(KeyboardKey.Right) or isKeyDown(KeyboardKey.D) :
         angle+=0.1
     if isKeyDown(KeyboardKey.Left) or isKeyDown(KeyboardKey.A):
@@ -111,7 +112,7 @@ proc draw() =
     #ellipse(DrawMode.Line,0,0,150,50)
     #quad(DrawMode.Fill,-100,-100,100,-100,150,100,-150,100)
     #draw(sampleTexture,-sampleTexture.width/2,-sampleTexture.height/2)
-    #draw(sampleText,100,100)
+    draw(sampleText,100,100,32.0)
     #polygon(DrawMode.fill,points)
     draw(atlasTexture,walkAnim[walkAnimCounter],-48,-64)
     if (frameCount mod 5) == 0 :

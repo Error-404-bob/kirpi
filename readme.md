@@ -42,8 +42,7 @@ proc update(dt: float) =
         quit()
 
 proc draw() =
-    setColor(Black)
-    clear()
+    clear(Black)
     setColor(White)
     draw(sampleText,100,100)
 
@@ -80,10 +79,17 @@ load()     # to do one-time setup of your game
 update(dt:float)   # which is used to manage your game's state frame-to-frame
 draw()     #  which is used to render the game state onto the screen
 config(settings:AppSettings) = # which is used to config the game app
-    #all properties
+    #all properties with default values.
+
     settings.fps=60
+    settings.printFPS=false
+    settings.printFrameTime=false
+
     settings.defaultTextureFilter=TextureFilterSettings.Linear
+    settings.antialias=true
+
     
+    setting.iconPath=""  # Should be RGBA 32bit PNG
     settings.window.width=800   
     settings.window.height=600  
     settings.window.borderless=false
@@ -92,6 +98,9 @@ config(settings:AppSettings) = # which is used to config the game app
     settings.window.minHeight=1
     settings.window.fullscreen=false
     settings.window.alwaysOnTop=false
+
+GetFramesPerSecond() # Returns FPS
+GetFrameMiliseconds() # Returns time in seconds for last frame (delta time)
 
 #  opens a window and runs the game 
 run(title:string,load: proc(), update: proc(dt:float), draw: proc(), config : proc (settings : var AppSettings)=nil)  
@@ -113,10 +122,10 @@ replaceTransform(t: Transform)    #replaces the current coordinate transformatio
 
 #Object Creation
 newTexture(filename:string):Texture    #creates a new Texture.
+newFont(filename:string, antialias:bool=true):Font #creates a new Font
 newText(text:string, font:ptr rl.Font):Text    #creates a new drawable Text object.
-newFont(filename:string):Font  #creates a new Font
 newQuad(x,y,width,height,sw,sh:int):Quad  #creates a new Quad.
-newQuad(x,y,width,height:int, texture:var Texture):Quad   #creates a new Quad.
+newQuad(x,y,width,height:int, texture:var Texture):Quad   #creates a new Quad (it just uses the texture to get width&height properties).
 newSpriteBatch(texture:var Texture, maxSprites:int=1000): SpriteBatch     #creates a new SpriteBatch
 
 #Drawing State
@@ -142,6 +151,7 @@ draw(texture:Texture, quad:Quad, x:float=0.0,y:float=0.0)   #draws a texture wit
 draw(spriteBatch:SpriteBatch, x:float=0,y:float=0)  #draws a spritebatch
 draw(text:Text ,x:float=0.0,y:float=0.0, size:float=16, spacing:float=1.0 )     #draws a text
 clear()     #clears the screen with the active color.
+clear(color:Color)     #clears the screen with the specified color.
 
 ### SOUND
 newSound(fileName:string, soundType:SoundType)  #creates a sound.

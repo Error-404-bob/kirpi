@@ -1,4 +1,4 @@
-import kirpi 
+import ../src/kirpi
 
 proc load() =
   discard
