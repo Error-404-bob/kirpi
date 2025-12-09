@@ -119,6 +119,8 @@ shear(shx:float,shy:float)     #shears the coordinate system.
 transformPoint(x:float,y:float)    #converts the given 2D position from global coordinates into screen-space.	
 inverseTransformPoint(x:float,y:float)    #converts the given 2D position from screen-space into global coordinates.	
 replaceTransform(t: Transform)    #replaces the current coordinate transformation with the given Transform object.
+pushState()     #copies the current drawing state (color, line settings, font, etc.) and pushes it onto the state stack.
+popState()      #Restores the previous drawing state by popping it from the state stack.
 
 #Object Creation
 newTexture(filename:string):Texture    #creates a new Texture.
@@ -132,13 +134,17 @@ newSpriteBatch(texture:var Texture, maxSprites:int=1000): SpriteBatch     #creat
 setColor (r:uint8, g:uint8,b:uint8, a:uint8)  #sets the color used for drawing.
 setColor (color:Color)     #sets the color used for drawing.	
 getColor () :Color   #gets the current color
-setLine(width:float,joinType:JoinTypes=JoinTypes.Miter)  #sets the line width and join.
-setLineWidth(width:float) #sets the line width
-getLineWidth():float   #gets the current line width 
-setLineJoin(joinType:JoinTypes) # sets the line join
-getLineJoin() # gets the current line join
+setLine(width:float,joinType:JoinTypes=JoinTypes.Miter,beginCap:CapTypes,endCap:CapTypes=beginCap)   # sets the line stroke parameters (width, join type, and cap styles).
+setLineWidth(width:float)   #sets the line stroke width.
+getLineWidth():float    #returns the current line stroke width.
+setLineJoin(joinType:JoinTypes)      # sets the line join style.
+getLineJoin()    # returns the current line join style.
+setLineCaps(beginCap:CapTypes,endCap:CapTypes=beginCap)  # sets the line cap style for the start and end of strokes.
+getLineBeginCap():CapTypes  # returns the line cap style used at the beginning of strokes.
+getLineEndCap():CapTypes  # returns the line cap style used at the end of strokes.
 setFont(font:rl.Font) #sets the font
-getFont() :Font   #gets the current font
+getFont() :Font   #returns the current font
+getDefaultFont() :Font  #returns the framework's default font.
 
 #Drawing
 polygon(mode:DrawModes,points:varargs[float])   #draws a polygon

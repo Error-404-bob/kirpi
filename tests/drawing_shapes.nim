@@ -64,13 +64,19 @@ proc draw() =
     draw(newText("Polygon Sample - Star",getFont() ),460,290,24 )
 
     #Lines
-    setColor(250,250,250,128)
-    setLine(15,JoinTypes.Round)
+    push()
+    scale(3,3)
+    translate(-200,-1000)
+    
+    setColor(250,250,250,125)
+    setLine(15,JoinTypes.Round,CapTypes.Round)
+    let (mx,my)=inverseTransformPoint(getMouseX(),getMouseY() )
+
     line(
         100.0,500.0,
         200.0,500.0,
         130.0,480.0,
-        getMouseX(),getMouseY()
+        mx,my
     )
     line(
         250.0,450.0,
@@ -82,6 +88,8 @@ proc draw() =
     )
     setLine(1)
     #draw(newText("Line",getFont() ),128,470,24 )
+    pop()
+    
 
     #Arc
     setColor(Orange)

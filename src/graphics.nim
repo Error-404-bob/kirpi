@@ -106,13 +106,59 @@ proc replaceTransform*(t: Transform) =
 
 proc applyTransform*(t: Transform) =
   globalTransform = matMul(t, globalTransform)
-### End of Fast 2D Transform Logic ###
+
+# Polar decomposition 2x2 matris için
+proc decompose2D(m: Transform): tuple[rotation: float, scaleX: float, scaleY: float, shear: float] =
+  # 2x2 matris
+  let A = float(m.a)
+  let B = float(m.b)
+  let C = float(m.c)
+  let D = float(m.d)
+
+  # Yaklaşık rotation
+  var theta = arctan2(B, A)
+  let cosR = cos(theta)
+  let sinR = sin(theta)
+
+  # R^T * M = S
+  let Sxx = cosR*A + sinR*B
+  let Sxy = cosR*C + sinR*D
+  let Syx = -sinR*A + cosR*B
+  let Syy = -sinR*C + cosR*D
+
+  let scaleX = Sxx
+  let scaleY = Syy
+  let shear  = Sxy / scaleY  # shearX
+
+  (theta, scaleX, scaleY, shear)
+
+proc getScale*(): tuple[sx:float, sy:float] =
+  let (_, sx, sy, _) = decompose2D(globalTransform)
+  result=(sx, sy)
+
+proc getRotation*(): float =
+  let (rot, _, _, _) = decompose2D(globalTransform)
+  result=rot
+
+proc getShear*(): float =
+  let (_, _, _, sh) = decompose2D(globalTransform)
+  result=sh
+  
+### End of 2D Transform Logic ###
+
+
+
 
 type 
   JoinTypes* = enum
     Miter,
     Round,
     Bevel
+
+  CapTypes* = enum 
+    Square,
+    Round,
+    None
 
   TextureFilters* = enum 
     Default,
@@ -148,6 +194,86 @@ type
     defHeight:int=1
 
 
+### Draw State Logic ### 
+
+
+
+
+var defaultFont*:Font
+type 
+  DrawState = object 
+    drawerColor:Color=Color()
+    drawerLineWidth:float=1.0f
+    drawerLineJoin:JoinTypes=JoinTypes.Miter
+    drawerLineBeginCap:CapTypes=CapTypes.None
+    drawerLineEndCap:CapTypes=CapTypes.None
+    currentFont:Font
+
+
+var globalDrawState:DrawState
+var stateStack*: seq[DrawState] = @[]
+
+
+proc pushState*() =
+  stateStack.add(globalDrawState)
+
+proc popState*() =
+  if stateStack.len > 0:
+    globalDrawState = stateStack[^1]
+    stateStack.setLen(stateStack.len-1)
+
+
+proc setFont*(font:Font) =
+  globalDrawState.currentFont=font
+
+proc getFont*():Font =
+  result=globalDrawState.currentFont
+
+proc getDefaultFont*():Font =
+  result=defaultFont
+
+
+proc setColor* (r:int, g:int,b:int, a:int) =
+    globalDrawState.drawerColor=Color(r:r.uint8,g:g.uint8,b:b.uint8,a:a.uint8)
+
+proc setColor* (color:Color) =
+    globalDrawState.drawerColor=color
+
+proc getColor * () :Color =
+  result=globalDrawState.drawerColor
+
+proc setLine*(width:float,joinType:JoinTypes=JoinTypes.Miter,beginCap:CapTypes=CapTypes.None,endCap:CapTypes=beginCap) =
+    globalDrawState.drawerLineWidth=width
+    globalDrawState.drawerLineJoin=joinType
+    globalDrawState.drawerLineBeginCap=beginCap
+    globalDrawState.drawerLineEndCap=endCap
+
+proc setLineWidth*(width:float) =
+  globalDrawState.drawerLineWidth=width
+
+proc setLineJoin*(joinType:JoinTypes) =
+  globalDrawState.drawerLineJoin=joinType
+
+proc setLineCaps*(beginCap:CapTypes,endCap:CapTypes=beginCap) =
+  globalDrawState.drawerLineBeginCap=beginCap
+  globalDrawState.drawerLineEndCap=endCap
+
+proc getLineWidth*():float =
+  result=globalDrawState.drawerLineWidth
+
+proc getLineJoin*():JoinTypes =
+  result=globalDrawState.drawerLineJoin
+
+proc getLineBeginCap*():CapTypes =
+  result=globalDrawState.drawerLineBeginCap
+
+proc getLineEndCap*():CapTypes =
+  result=globalDrawState.drawerLineEndCap
+
+
+
+
+### End of Draw State Logic ###
 
 type 
   DrawModes* = enum Fill,Line
@@ -165,7 +291,8 @@ var fonts*: Table[Hash, rl.Font] =initTable[Hash, rl.Font]()
 
 var defaultFilter*:TextureFilters=TextureFilters.Linear
 
-#Creators
+### Creators ###
+
 proc newTexture*(filename:string, filter:TextureFilters=Default):Texture =
   result=Texture(rTexture:loadTexture(filename))
   result.width=float(result.rTexture.width)
@@ -245,53 +372,12 @@ proc clear*(spriteBatch: var SpriteBatch) =
   
 
 
-#Properties
-var defaultFont*:Font
-
-var drawerColor:Color=Color()
-var drawerLineWidth:float=1.0f
-var drawerLineJoin:JoinTypes=JoinTypes.Miter
-var currentFont:Font = defaultFont
 
 
-proc setFont*(font:Font) =
-  currentFont=font
-
-proc getFont*():Font =
-  result=currentFont
-
-proc getDefaultFont*():Font =
-  result=defaultFont
-
-
-proc setColor* (r:int, g:int,b:int, a:int) =
-    drawerColor=Color(r:r.uint8,g:g.uint8,b:b.uint8,a:a.uint8)
-
-proc setColor* (color:Color) =
-    drawerColor=color
-
-proc getColor * () :Color =
-  result=drawerColor
-
-proc setLine*(width:float,joinType:JoinTypes=JoinTypes.Miter) =
-    drawerLineWidth=width
-    drawerLineJoin=joinType
-
-proc setLineWidth*(width:float) =
-  drawerLineWidth=width
-
-proc setLineJoin*(joinType:JoinTypes) =
-  drawerLineJoin=joinType
-
-proc getLineWidth*():float =
-  result=drawerLineWidth
-
-proc getLineJoin*():JoinTypes =
-  result=drawerLineJoin
 
 proc pixel*(x:float,y:float) =
   var (tx,ty)=transformPoint(x,y)
-  drawPixel(int32(tx), int32(ty),drawerColor )
+  drawPixel(int32(tx), int32(ty),globalDrawState.drawerColor )
 
 proc polygon*(mode:DrawModes,points:varargs[float]) =
     var allPoints:seq[Vec2]
@@ -304,7 +390,7 @@ proc polygon*(mode:DrawModes,points:varargs[float]) =
       var tris=triangulate(allPoints)
       var counter:int=0
       for t in tris:
-        drawTriangle(Vector2(x:t.c.x,y:t.c.y),Vector2(x:t.b.x,y:t.b.y),Vector2(x:t.a.x,y:t.a.y),drawerColor)
+        drawTriangle(Vector2(x:t.c.x,y:t.c.y),Vector2(x:t.b.x,y:t.b.y),Vector2(x:t.a.x,y:t.a.y),globalDrawState.drawerColor)
         
     else :
       for i in 0..<allPoints.len :
@@ -315,7 +401,16 @@ proc polygon*(mode:DrawModes,points:varargs[float]) =
         else :
           b=Vector2(x:allPoints[0].x,y:allPoints[0].y)
         
-        drawLine(a,b,drawerColor)
+        drawLine(a,b,globalDrawState.drawerColor)
+
+proc getSmoothSegmentCount(angleDiff: float, radius: float, scaleFactor: float): int =
+  let segStep=5.0
+  let circumference = 2 * PI * (radius * scaleFactor)
+  let fullCount=circumference/segStep
+  var seg = ceil(fullCount * (abs(angleDiff)/TAU) )
+  if seg < 6: seg = 6       # minimum 
+  if seg > 200: seg = 200   # maksimum 
+  result=int(seg)
 
 
 proc getArcPoints(x:float,y:float,radiusX:float,radiusY:float,angle1:float,angle2:float,segments:int=16):seq[float] =
@@ -324,7 +419,7 @@ proc getArcPoints(x:float,y:float,radiusX:float,radiusY:float,angle1:float,angle
   var angleStep=angleDiff/float(segments)
 
   var allPoints:seq[float]
-  for i in 0..<segments :
+  for i in 0..segments :
     var ang=angleBegin+float(i)*angleStep
     allPoints.add(x+cos(ang)*radiusX)
     allPoints.add(y+sin(ang)*radiusY)
@@ -340,7 +435,7 @@ proc lineIntersection*(A, B, C, D: Vector2): Option[Vector2] =
     s2y = D.y - C.y
     denom = -s2x * s1y + s1x * s2y
 
-  if abs(denom) < 1e-6:  # paralel
+  if abs(denom) < 1e-6:  # parallel
     return none(Vector2)
 
   let
@@ -358,206 +453,333 @@ proc line*(points:varargs[float]) =
   if points.len mod 2 != 0:
     raise newException(ValueError, "Invalid points definition! Must be even number of coordinates.")
 
+  if points.len<4:
+    raise newException(ValueError, "Invalid points definition! Needs a minimum of two points to draw a line.")
+
   var allPoints: seq[Vector2] = @[]
   for i in countup(0, points.len - 1, 2):
-    let (px, py) = transformPoint(points[i], points[i+1])
-    allPoints.add(Vector2(x:px, y:py))
+    allPoints.add(Vector2(x:points[i], y:points[i+1]))
+
+  var tris: seq[Vector2] = @[]
+
+  let halfLineWidth=globalDrawState.drawerLineWidth*0.5
+
+  #PreCalculate Full Smooth Segment Count for Rounded Cap,Join
+  var (sx,sy)=getScale()
+  var maxScale=max(sx,sy)
+  var fullSmoothSegCount:int=getSmoothSegmentCount(TAU,halfLineWidth,maxScale)
+  var divTAU:float=1/TAU
+  var roundedCapSegCount:int=6
+  if globalDrawState.drawerLineBeginCap==CapTypes.Round or globalDrawState.drawerLineEndCap==CapTypes.Round :
+    roundedCapSegCount=max( int(float(fullSmoothSegCount)*0.5) , roundedCapSegCount )
 
   
-  for i in countup(0, allPoints.len - 2, 1):
-    let p1 = allPoints[i]
-    let p2 = allPoints[i+1]
-    #drawLine(p1, p2, drawerLineWidth, drawerColor)
+  if globalDrawState.drawerLineWidth>0.0 :
+    if allPoints.len>2 :
+      
+      #Implementing bevel,miter,round join
+      var prevIntersectionTestTop:Option[Vector2]=none(Vector2)
+      var prevIntersectionTestDown:Option[Vector2]=none(Vector2)
+      for i in 0..<allPoints.len-2:
+        let p1=allPoints[i]
+        let p2=allPoints[i+1]
+        let p3=allPoints[i+2]
 
-  
-  if drawerLineWidth>1.0 and allPoints.len>2 :
-    rlBegin(Triangles)
+        let seg1=p2-p1
+        let seg1Unit=seg1.normalize()
+        let seg1Normal=Vector2(x: seg1Unit.y,y: -seg1Unit.x)
+
+        let seg2=p3-p2
+        let seg2Unit=seg2.normalize()
+        let seg2Normal=Vector2(x: seg2Unit.y,y: -seg2Unit.x)
+
+        let segBetween=p3-p1
+        let segBetweenPerp=Vector2(x: segBetween.y,y: -segBetween.x)
+        var cornerNormal= segBetweenPerp.normalize()
+
+        var normalSide:float
+        var projectToBetween=seg1.dotProduct(segBetweenPerp)
+        if projectToBetween==0 :
+          continue
+        elif projectToBetween>0 :
+          normalSide= 1.0
+        elif projectToBetween<0 :
+          normalSide= -1.0
+
+        #Drawing Line with Triangles
+        
+        var s1a=p1+seg1Normal*halfLineWidth
+        var s1b=p2+seg1Normal*halfLineWidth
+        var s1c=p2-seg1Normal*halfLineWidth
+        var s1d=p1-seg1Normal*halfLineWidth
+
+        var s2a=p2+seg2Normal*halfLineWidth
+        var s2b=p3+seg2Normal*halfLineWidth
+        var s2c=p3-seg2Normal*halfLineWidth
+        var s2d=p2-seg2Normal*halfLineWidth
+
+        
+
+        var intersectionTestTop=lineIntersection(s1a,s1b,s2a,s2b)
+        if intersectionTestTop.isSome :
+          s1b=intersectionTestTop.get()
+          s2a=s1b
+          
+
+        var intersectionTestDown=lineIntersection(s1d,s1c,s2d,s2c)
+        if intersectionTestDown.isSome :
+          s1c=intersectionTestDown.get()
+          s2d=intersectionTestDown.get()
+          
+
+        if prevIntersectionTestTop.isSome :
+          s1a=prevIntersectionTestTop.get()
+          
+        if prevIntersectionTestDown.isSome :
+          s1d=prevIntersectionTestDown.get()
+
+        #Implementing Caps
+          
+        if i==0 :
+          
+          if globalDrawState.drawerLineBeginCap==CapTypes.Round :
+            let radius=halfLineWidth
+            let beginAngle=rm.angle(Vector2( x: 1.0,y: 0.0), -seg1Normal )
+            let endAngle=beginAngle+PI
+            
+            var arcPoints=getArcPoints( p1.x,p1.y,radius,radius,beginAngle,endAngle,roundedCapSegCount )
+            for n in countup(0, arcPoints.len - 3, 2) :
+              var ax,ay,bx,by:float
+              #Fill Arc
+              ax=arcPoints[n]
+              ay=arcPoints[n+1]
+              bx=arcPoints[n+2]
+              by=arcPoints[n+3]
+
+              tris.add( Vector2(x:p1.x, y: p1.y) )
+              tris.add(Vector2(x: bx, y: by) )
+              tris.add(Vector2(x: ax, y: ay) )
+          elif globalDrawState.drawerLineBeginCap==CapTypes.Square :
+            s1a-=seg1Unit*halfLineWidth
+            s1d-=seg1Unit*halfLineWidth
+        elif i==allPoints.len-3 :
+          if globalDrawState.drawerLineEndCap==CapTypes.Round :
+            let radius=halfLineWidth
+            let beginAngle=rm.angle(Vector2( x: 1.0,y: 0.0), seg2Normal )
+            let endAngle=beginAngle+PI
+            var arcPoints=getArcPoints( p3.x,p3.y,radius,radius,beginAngle,endAngle,roundedCapSegCount )
+            for n in countup(0, arcPoints.len - 3, 2) :
+              var ax,ay,bx,by:float
+              #Fill Arc
+              ax=arcPoints[n]
+              ay=arcPoints[n+1]
+              bx=arcPoints[n+2]
+              by=arcPoints[n+3]
+
+              tris.add( Vector2(x: p3.x, y: p3.y) )
+              tris.add( Vector2(x: bx, y: by)  )
+              tris.add( Vector2(x: ax, y: ay) )
+          elif globalDrawState.drawerLineEndCap==CapTypes.Square :
+            s2b+=seg2Unit*halfLineWidth
+            s2c+=seg2Unit*halfLineWidth
+          
+        #Drawing Segment-1 Quad
+        tris.add( Vector2(x: s1c.x, y: s1c.y))
+        tris.add( Vector2(x: s1b.x, y: s1b.y))
+        tris.add( Vector2(x: s1a.x, y: s1a.y))
+
+        
+        tris.add( Vector2(x: s1d.x, y: s1d.y) )
+        tris.add( Vector2(x: s1c.x, y: s1c.y))
+        tris.add( Vector2(x: s1a.x, y: s1a.y))
+
+        #Drawing Last Segment Quad
+        if i==allPoints.len-3 :
+          tris.add( Vector2(x: s2c.x, y: s2c.y))
+          tris.add( Vector2(x: s2b.x, y: s2b.y))
+          tris.add( Vector2(x: s2a.x, y: s2a.y))
+
+          
+          tris.add( Vector2(x: s2d.x, y: s2d.y) )
+          tris.add( Vector2(x: s2c.x, y: s2c.y))
+          tris.add( Vector2(x: s2a.x, y: s2a.y))
+
+        
+        #Implementing Join Types
+        
+        let np1=if normalSide == -1 : s1c else : s1b
     
-    color4ub(drawerColor.r, drawerColor.g, drawerColor.b, drawerColor.a)
-    #Implementing bevel,miter,round join
-    var prevIntersectionTestTop:Option[Vector2]=none(Vector2)
-    var prevIntersectionTestDown:Option[Vector2]=none(Vector2)
-    for i in 0..<allPoints.len-2:
-      let p1=allPoints[i]
-      let p2=allPoints[i+1]
-      let p3=allPoints[i+2]
+        let np2=if normalSide == -1 : s2d else : s2a
 
-      let seg1=p2-p1
-      let seg1Unit=seg1.normalize()
-      let seg1Normal=Vector2(x: seg1Unit.y,y: -seg1Unit.x)
-
-      let seg2=p3-p2
-      let seg2Unit=seg2.normalize()
-      let seg2Normal=Vector2(x: seg2Unit.y,y: -seg2Unit.x)
-
-      let segBetween=p3-p1
-      let segBetweenPerp=Vector2(x: segBetween.y,y: -segBetween.x)
-      var cornerNormal= segBetweenPerp.normalize()
-
-      var normalSide:float
-      var projectToBetween=seg1.dotProduct(segBetweenPerp)
-      if projectToBetween==0 :
-        continue
-      elif projectToBetween>0 :
-        normalSide= 1.0
-      elif projectToBetween<0 :
-        normalSide= -1.0
-
-      let halfLineWidth=drawerLineWidth*0.5
-      #Drawing Line with Triangles
-       
-      var s1a=p1+seg1Normal*halfLineWidth
-      var s1b=p2+seg1Normal*halfLineWidth
-      var s1c=p2-seg1Normal*halfLineWidth
-      var s1d=p1-seg1Normal*halfLineWidth
-
-      var s2a=p2+seg2Normal*halfLineWidth
-      var s2b=p3+seg2Normal*halfLineWidth
-      var s2c=p3-seg2Normal*halfLineWidth
-      var s2d=p2-seg2Normal*halfLineWidth
-
-      
-
-      var intersectionTestTop=lineIntersection(s1a,s1b,s2a,s2b)
-      if intersectionTestTop.isSome :
-        s1b=intersectionTestTop.get()
-        s2a=s1b
-        
-
-      var intersectionTestDown=lineIntersection(s1d,s1c,s2d,s2c)
-      if intersectionTestDown.isSome :
-        s1c=intersectionTestDown.get()
-        s2d=intersectionTestDown.get()
-        
-
-      if prevIntersectionTestTop.isSome :
-        s1a=prevIntersectionTestTop.get()
-        
-      if prevIntersectionTestDown.isSome :
-        s1d=prevIntersectionTestDown.get()
-        
-
-      
-      
-      
-
-       
-       
-      vertex2f(s1c.x, s1c.y);
-      vertex2f(s1b.x, s1b.y);
-      vertex2f(s1a.x, s1a.y);
-
-      
-      vertex2f(s1d.x, s1d.y); 
-      vertex2f(s1c.x, s1c.y);
-      vertex2f(s1a.x, s1a.y);
-
-      if i==allPoints.len-3 :
-        vertex2f(s2c.x, s2c.y);
-        vertex2f(s2b.x, s2b.y);
-        vertex2f(s2a.x, s2a.y);
-
-        
-        vertex2f(s2d.x, s2d.y); 
-        vertex2f(s2c.x, s2c.y);
-        vertex2f(s2a.x, s2a.y);
+        var npc= if normalSide == -1.0 : s1b else :s1c
 
         
 
-      #Implementing Join Types
-      
-      let np1=if normalSide == -1 : s1c else : s1b
-   
-      let np2=if normalSide == -1 : s2d else : s2a
-
-      var npc= if normalSide == -1.0 : s1b else :s1c
-
-      
-
-      if drawerLineJoin==JoinTypes.Miter :
-        var np3 = p2-(npc-p2)
-        if (np3-p2).lengthSqr>drawerLineWidth*drawerLineWidth:
-          np3=(np1+np2)*0.5
-        if normalSide == -1.0 :
-          vertex2f(np3.x, np3.y); 
-          vertex2f(npc.x, npc.y); 
-          vertex2f(np1.x, np1.y); 
-          
-          vertex2f(np3.x, np3.y); 
-          vertex2f(np2.x, np2.y); 
-          vertex2f(npc.x, npc.y); 
-        else :
-          
-          vertex2f(np1.x, np1.y); 
-          vertex2f(npc.x, npc.y); 
-          vertex2f(np3.x, np3.y); 
-          
-          vertex2f(npc.x, npc.y);
-          vertex2f(np2.x, np2.y); 
-          vertex2f(np3.x, np3.y); 
-
-        
-      elif drawerLineJoin==JoinTypes.Bevel :
-        if normalSide == -1.0 :
-          vertex2f(npc.x, npc.y); 
-          vertex2f(np1.x, np1.y); 
-          vertex2f(np2.x, np2.y); 
-        else :
-          vertex2f(np2.x, np2.y); 
-          vertex2f(np1.x, np1.y); 
-          vertex2f(npc.x, npc.y); 
-      
-      elif drawerLineJoin==JoinTypes.Round :
-        var radius=(np1-npc).length
-        var beginAngle=rm.angle(Vector2( x: 1.0,y: 0.0), (np1-p2) )
-        var angDiff:float=rm.angle( (np1-p2),(np2-p2))
-        var arcPoints=getArcPoints( p2.x,p2.y,halfLineWidth,halfLineWidth,beginAngle,(beginAngle+angDiff),16 )
-        for n in countup(0, arcPoints.len - 3, 2) :
-          var ax,ay,bx,by:float
-
-         
-          #Fill Arc
-          
-          ax=arcPoints[n]
-          ay=arcPoints[n+1]
+        if globalDrawState.drawerLineJoin==JoinTypes.Miter :
+          var np3 = p2-(npc-p2)
+          if (np3-p2).lengthSqr>globalDrawState.drawerLineWidth*globalDrawState.drawerLineWidth:
+            np3=(np1+np2)*0.5
+          if normalSide == -1.0 :
+            tris.add( Vector2(x: np3.x, y: np3.y) )
+            tris.add( Vector2(x: npc.x, y: npc.y) )
+            tris.add( Vector2(x: np1.x, y: np1.y) )
+            
+            tris.add( Vector2(x: np3.x, y: np3.y) )
+            tris.add( Vector2(x: np2.x, y: np2.y) )
+            tris.add( Vector2(x: npc.x, y: npc.y) )
+          else :
+            
+            tris.add( Vector2(x: np1.x, y: np1.y) )
+            tris.add( Vector2(x: npc.x, y: npc.y) )
+            tris.add( Vector2(x: np3.x, y: np3.y) )
+            
+            tris.add( Vector2(x: npc.x, y: npc.y) )
+            tris.add( Vector2(x: np2.x, y: np2.y) )
+            tris.add( Vector2(x: np3.x, y: np3.y) )
 
           
-          bx=arcPoints[n+2]
-          by=arcPoints[n+3]
+        elif globalDrawState.drawerLineJoin==JoinTypes.Bevel :
+          if normalSide == -1.0 :
+            tris.add( Vector2(x: npc.x, y: npc.y) )
+            tris.add( Vector2(x: np1.x, y: np1.y) )
+            tris.add( Vector2(x: np2.x, y: np2.y) )
+          else :
+            tris.add( Vector2(x: np2.x, y: np2.y) )
+            tris.add( Vector2(x: np1.x, y: np1.y) )
+            tris.add( Vector2(x: npc.x, y: npc.y) )
+        
+        elif globalDrawState.drawerLineJoin==JoinTypes.Round :
+          
+          var radius=halfLineWidth
+          var beginAngle=rm.angle(Vector2( x: 1.0,y: 0.0), (np1-p2) )
+          var angDiff:float=rm.angle( (np1-p2),(np2-p2))
 
-          if n==0 :
-            ax=np1.x
-            ay=np1.y
-          else:
+          let angRate=abs(angDiff)*divTAU
+          let segCount=max( int( float(fullSmoothSegCount)*angRate),6 )
+          var arcPoints=getArcPoints( p2.x,p2.y,radius,radius,beginAngle,(beginAngle+angDiff),segCount )
+          for n in countup(0, arcPoints.len - 3, 2) :
+            var ax,ay,bx,by:float
+
+          
+            #Fill Arc
+            
             ax=arcPoints[n]
             ay=arcPoints[n+1]
 
-          if n==arcPoints.len-4 :
-            bx=np2.x
-            by=np2.y
-          else :
+            
             bx=arcPoints[n+2]
             by=arcPoints[n+3]
-          
-              
-          if normalSide == -1.0 :
-            vertex2f(bx, by); 
-            vertex2f(npc.x, npc.y); 
-            vertex2f(ax, ay); 
-            discard
-            
-          else :
-            vertex2f(ax, ay); 
-            vertex2f(npc.x, npc.y); 
-            vertex2f(bx, by); 
-            discard
-            
-        
 
-      prevIntersectionTestDown=intersectionTestDown
-      prevIntersectionTestTop=intersectionTestTop
+            if n==0 :
+              ax=np1.x
+              ay=np1.y
+            else:
+              ax=arcPoints[n]
+              ay=arcPoints[n+1]
+
+            if n==arcPoints.len-4 :
+              bx=np2.x
+              by=np2.y
+            else :
+              bx=arcPoints[n+2]
+              by=arcPoints[n+3]
+            
+                
+            if normalSide == -1.0 :
+              tris.add( Vector2(x: bx, y: by) )
+              tris.add( Vector2(x: npc.x, y: npc.y) )
+              tris.add( Vector2(x: ax, y: ay) )
+              discard
+              
+            else :
+              tris.add( Vector2(x: ax, y: ay) )
+              tris.add( Vector2(x: npc.x, y: npc.y) )
+              tris.add( Vector2(x: bx, y: by) )
+              discard
+              
+          
+
+        prevIntersectionTestDown=intersectionTestDown
+        prevIntersectionTestTop=intersectionTestTop
+      
+      
+    elif allPoints.len==2 : # One line 
+      let p1=allPoints[0]
+      let p2=allPoints[1]
+      let seg=p2-p1
+      let segUnit=seg.normalize()
+      let segNormal=Vector2(x: segUnit.y,y: -segUnit.x)
+
+      var sa=p1+segNormal*halfLineWidth
+      var sb=p2+segNormal*halfLineWidth
+      var sc=p2-segNormal*halfLineWidth
+      var sd=p1-segNormal*halfLineWidth
+
+      
+      if globalDrawState.drawerLineBeginCap==CapTypes.Round :
+        let radius=halfLineWidth
+        let beginAngle=rm.angle(Vector2( x: 1.0,y: 0.0), -segNormal )
+        let endAngle=beginAngle+PI
+        var arcPoints=getArcPoints( p1.x,p1.y,radius,radius,beginAngle,endAngle,roundedCapSegCount )
+        for n in countup(0, arcPoints.len - 3, 2) :
+          var ax,ay,bx,by:float
+          #Fill Arc
+          ax=arcPoints[n]
+          ay=arcPoints[n+1]
+          bx=arcPoints[n+2]
+          by=arcPoints[n+3]
+
+          tris.add( Vector2(x:p1.x, y: p1.y))
+          tris.add( Vector2(x:bx, y: by) )
+          tris.add( Vector2(x:ax, y: ay))
+      elif globalDrawState.drawerLineBeginCap==CapTypes.Square :
+        sa-=segUnit*halfLineWidth
+        sd-=segUnit*halfLineWidth
     
+      if globalDrawState.drawerLineEndCap==CapTypes.Round :
+        let radius=halfLineWidth
+        let beginAngle=rm.angle(Vector2( x: 1.0,y: 0.0), segNormal )
+        let endAngle=beginAngle+PI
+        var arcPoints=getArcPoints( p2.x,p2.y,radius,radius,beginAngle,endAngle,roundedCapSegCount )
+        for n in countup(0, arcPoints.len - 3, 2) :
+          var ax,ay,bx,by:float
+          #Fill Arc
+          ax=arcPoints[n]
+          ay=arcPoints[n+1]
+          bx=arcPoints[n+2]
+          by=arcPoints[n+3]
+
+          tris.add( Vector2(x:p2.x, y: p2.y))
+          tris.add( Vector2(x:bx, y: by) )
+          tris.add( Vector2(x:ax, y: ay))
+      elif globalDrawState.drawerLineEndCap==CapTypes.Square :
+        sb+=segUnit*halfLineWidth
+        sc+=segUnit*halfLineWidth
+
+      #Drawing Segment-1 Quad
+      tris.add( Vector2(x:sc.x, y: sc.y))
+      tris.add( Vector2(x:sb.x, y: sb.y))
+      tris.add( Vector2(x:sa.x, y: sa.y))
+
+      
+      tris.add( Vector2(x:sd.x, y: sd.y) )
+      tris.add( Vector2(x:sc.x, y: sc.y))
+      tris.add( Vector2(x:sa.x, y: sa.y))
+
+    #Drawing All Triangles
+    for i in 0..<tris.len: 
+      var tp=transformPoint(tris[i].x,tris[i].y)
+      tris[i]=Vector2(x:tp[0],y: tp[1]) 
+      
+    rlBegin(Triangles)
+    color4ub(globalDrawState.drawerColor.r, globalDrawState.drawerColor.g, globalDrawState.drawerColor.b, globalDrawState.drawerColor.a)
+    for n in countup(0, tris.len - 3, 3) :
+      vertex2f(tris[n].x,tris[n].y)
+      vertex2f(tris[n+1].x,tris[n+1].y)
+      vertex2f(tris[n+2].x,tris[n+2].y)
     rlEnd()
+      
+      
     
       
 
@@ -595,26 +817,21 @@ proc arc*(mode:DrawModes, x:float,y:float,radius:float,angle1:float,angle2:float
   arc(mode,ArcType.Pie,x,y,radius,angle1,angle2,segments)
 
 proc circle*(mode:DrawModes,x:float,y:float,radius:float) =
-  let pi2=2*PI
-  let min_segment=16
-  let max_segment=128
-  let circumference=pi2*radius
-  var segments=int(circumference/4)
-  segments=clamp(segments,min_segment,max_segment)
+  var (sx,sy)=getScale()
+  var maxScale=max(sx,sy)
+  var segments:int=getSmoothSegmentCount(TAU,radius,maxScale)
 
-  var allPoints:seq[float]=getArcPoints(x,y,radius,radius,0,pi2,segments)
+  var allPoints:seq[float]=getArcPoints(x,y,radius,radius,0,TAU,segments)
 
   if mode==Fill :
     polygon(Fill,allPoints)
   else:
-    allPoints.add(allPoints[0])
-    allPoints.add(allPoints[1])
     line(allPoints)
 
     
 
 proc clear*() =
-    clearBackground(drawerColor)
+    clearBackground(globalDrawState.drawerColor)
 
 proc clear*(color:Color) =
     clearBackground(color)
@@ -665,17 +882,14 @@ proc quad*(mode:DrawModes,x1:float,y1:float,x2:float,y2:float,x3:float,y3:float,
 
             
 proc ellipse*(mode:DrawModes,x:float,y:float,radiusX:float,radiusY:float) =
-  let pi2=2*PI
-  let min_segment=16
-  let max_segment=128
-  let circumference1=pi2*radiusX
-  let circumference2=pi2*radiusY
-  var segments=int( max(circumference1/4,circumference2/4) )
-  segments=clamp(segments,min_segment,max_segment)
+  var (sx,sy)=getScale()
+  var maxScale=max(sx,sy)
+  var maxRadius=max(radiusX,radiusY)
+  var segments:int=getSmoothSegmentCount(TAU,maxRadius,maxScale)
 
   var allPoints:seq[float]
-  let angleStep=pi2/float(segments)
-  for i in 0..<segments :
+  let angleStep=TAU/float(segments)
+  for i in 0..segments :
     var ang=float(i)*angleStep
     allPoints.add(x+cos(ang)*radiusX)
     allPoints.add(y+sin(ang)*radiusY)
@@ -683,8 +897,6 @@ proc ellipse*(mode:DrawModes,x:float,y:float,radiusX:float,radiusY:float) =
   if mode==Fill :
     polygon(Fill,allPoints)
   else:
-    allPoints.add(allPoints[0])
-    allPoints.add(allPoints[1])
     line(allPoints)
   
 
@@ -713,7 +925,7 @@ proc draw*( texture:Texture, quad:Quad, x:float=0.0,y:float=0.0) =
 
   setTexture(texture.rTexture.id) # Bind texture
   rlBegin(Triangles)
-  color4ub(drawerColor.r, drawerColor.g, drawerColor.b, drawerColor.a)
+  color4ub(globalDrawState.drawerColor.r, globalDrawState.drawerColor.g, globalDrawState.drawerColor.b, globalDrawState.drawerColor.a)
 
   #Quad normalized mapping
   let tcx1:float=quad.x/quad.sw
@@ -748,7 +960,7 @@ proc draw*( texture:Texture,x:float=0.0,y:float=0.0) =
 proc draw * ( spriteBatch:SpriteBatch, x:float=0,y:float=0) =
 
   setTexture(spriteBatch.textureID) # Bind texture
-  color4ub(drawerColor.r, drawerColor.g, drawerColor.b, drawerColor.a)
+  color4ub(globalDrawState.drawerColor.r, globalDrawState.drawerColor.g, globalDrawState.drawerColor.b, globalDrawState.drawerColor.a)
   rlBegin(Triangles)
 
   
@@ -817,7 +1029,7 @@ proc draw*( text:Text ,x:float=0.0,y:float=0.0, size:float=16, spacing:float=1.0
   pushMatrix()
   multMatrixf(matrixArray)
   translatef(x,y,0.0)
-  drawText(fonts[text.font.id],text.str, Vector2(x:0, y:0),Vector2(x:0,y:0),0, size, spacing, drawerColor)
+  drawText(fonts[text.font.id],text.str, Vector2(x:0, y:0),Vector2(x:0,y:0),0, size, spacing, globalDrawState.drawerColor)
   
   
   popMatrix()
