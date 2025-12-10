@@ -1,7 +1,10 @@
 import ../src/kirpi
 import math
 
+
+var testFont:Font
 proc load() =
+    testFont=newFont("tests/resources/Fredoka-Bold.ttf")
     discard
 
 proc update( dt:float) =
@@ -10,7 +13,6 @@ proc update( dt:float) =
 proc draw() =
     clear(Black)
     
-
     setColor(Magenta)
     #Circles
     circle(DrawModes.Fill,128,128,64)
@@ -21,8 +23,7 @@ proc draw() =
     ellipse(DrawModes.Fill,128,300,72,48)
     ellipse(DrawModes.Line,128,300,80,56)
     draw(newText("Ellipse",getFont() ),98,362,24 )
-    #Rect 
-    
+    #Rectangles     
     setColor(Green)
     rectangle(DrawModes.Fill,256,128,128,96)
     rectangle(DrawModes.Line,248,120,144,112)

@@ -194,14 +194,15 @@ type
     defHeight:int=1
 
   Shader * = object 
-    id:Hash
+    rShader:rl.Shader
 
 ### End of Graphic Objects ###
 
 
 ### Resource Collections ###
-var fonts*: Table[Hash, rl.Font] =initTable[Hash, rl.Font]()
-var shaders*: Table[Hash, rl.Shader] 
+
+var fonts*: Table[Hash, rl.Font] = initTable[Hash, rl.Font]()
+
 ### End of Resource Collections ###
 
 ### Draw State Logic ### 
@@ -284,8 +285,8 @@ proc getLineBeginCap*():CapTypes =
 proc getLineEndCap*():CapTypes =
   result=globalDrawState.drawerLineEndCap
 
-proc setShader*(shader:Shader) =
-  beginShaderMode(shaders[shader.id])
+proc setShader*(shader:var Shader) =
+  beginShaderMode(shader.rShader)
 
 proc setShader*() =
   endShaderMode()
@@ -345,11 +346,8 @@ proc newShader*(vertexShaderFile: string, fragmentShaderFile: string): Shader =
   let keyString = vPath & "|" & fPath
   let hashID: Hash = keyString.hash()
 
-  result=Shader(id:hashID)
-
-  # Load the shader if not already cached
-  if shaders.hasKey(hashID)==false :
-    shaders[hashID] = rl.loadShader(vertexShaderFile, fragmentShaderFile)
+  result=Shader(rShader:rl.loadShader(vertexShaderFile, fragmentShaderFile))
+  
 
 
 
@@ -407,50 +405,50 @@ proc clear*(spriteBatch: var SpriteBatch) =
 ### End of Sprite Batcher Methods ###
 
 ### Shader Methods ###
-proc setShaderValue*(shader: Shader, uniformName: string, value: float) =
-  if isShaderValid(shaders[shader.id]):
-    let loc = getShaderLocation(shaders[shader.id], uniformName)
-    rl.setShaderValue(shaders[shader.id], loc, float32(value) )
+proc setShaderValue*(shader:var Shader, uniformName: string, value: float) =
+  if isShaderValid(shader.rShader):
+    let loc = getShaderLocation(shader.rShader, uniformName)
+    rl.setShaderValue(shader.rShader, loc, float32(value) )
 
-proc setShaderValue*(shader: Shader, uniformName: string, value: int) =
-  if isShaderValid(shaders[shader.id]):
-    let loc = getShaderLocation(shaders[shader.id], uniformName)
-    rl.setShaderValue(shaders[shader.id], loc, int32(value) )
+proc setShaderValue*(shader:var Shader, uniformName: string, value: int) =
+  if isShaderValid(shader.rShader):
+    let loc = getShaderLocation(shader.rShader, uniformName)
+    rl.setShaderValue(shader.rShader, loc, int32(value) )
 
-proc setShaderValue*(shader: Shader, uniformName: string, value: (float,float)) =
-  if isShaderValid(shaders[shader.id]):
-    let loc = getShaderLocation(shaders[shader.id], uniformName)
-    rl.setShaderValue(shaders[shader.id], loc, Vector2(x:value[0],y:value[1]))
+proc setShaderValue*(shader:var  Shader, uniformName: string, value: (float,float)) =
+  if isShaderValid(shader.rShader):
+    let loc = getShaderLocation(shader.rShader, uniformName)
+    rl.setShaderValue(shader.rShader, loc, Vector2(x:value[0],y:value[1]))
 
-proc setShaderValue*(shader: Shader, uniformName: string, value: (float,float,float)) =
-  if isShaderValid(shaders[shader.id]):
-    let loc = getShaderLocation(shaders[shader.id], uniformName)
-    rl.setShaderValue(shaders[shader.id], loc, Vector3(x:value[0],y:value[1],z:value[2]))
+proc setShaderValue*(shader:var Shader, uniformName: string, value: (float,float,float)) =
+  if isShaderValid(shader.rShader):
+    let loc = getShaderLocation(shader.rShader, uniformName)
+    rl.setShaderValue(shader.rShader, loc, Vector3(x:value[0],y:value[1],z:value[2]))
 
-proc setShaderValue*(shader: Shader, uniformName: string, value: (float,float,float,float)) =
-  if isShaderValid(shaders[shader.id]):
-    let loc = getShaderLocation(shaders[shader.id], uniformName)
-    rl.setShaderValue(shaders[shader.id], loc, Vector4(x:value[0],y:value[1],z:value[2],w:value[3]) )
+proc setShaderValue*(shader:var Shader, uniformName: string, value: (float,float,float,float)) =
+  if isShaderValid(shader.rShader):
+    let loc = getShaderLocation(shader.rShader, uniformName)
+    rl.setShaderValue(shader.rShader, loc, Vector4(x:value[0],y:value[1],z:value[2],w:value[3]) )
 
-proc setShaderValue*(shader: Shader, uniformName: string, value: (int,int)) =
-  if isShaderValid(shaders[shader.id]):
-    let loc = getShaderLocation(shaders[shader.id], uniformName)
-    rl.setShaderValue(shaders[shader.id], loc, [int32(value[0]),int32(value[1]) ] )
+proc setShaderValue*(shader:var Shader, uniformName: string, value: (int,int)) =
+  if isShaderValid(shader.rShader):
+    let loc = getShaderLocation(shader.rShader, uniformName)
+    rl.setShaderValue(shader.rShader, loc, [int32(value[0]),int32(value[1]) ] )
 
-proc setShaderValue*(shader: Shader, uniformName: string, value: (int,int,int)) =
-  if isShaderValid(shaders[shader.id]):
-    let loc = getShaderLocation(shaders[shader.id], uniformName)
-    rl.setShaderValue(shaders[shader.id], loc, [int32(value[0]),int32(value[1]),int32(value[2]) ] )
+proc setShaderValue*(shader:var Shader, uniformName: string, value: (int,int,int)) =
+  if isShaderValid(shader.rShader):
+    let loc = getShaderLocation(shader.rShader, uniformName)
+    rl.setShaderValue(shader.rShader, loc, [int32(value[0]),int32(value[1]),int32(value[2]) ] )
 
-proc setShaderValue*(shader: Shader, uniformName: string, value: (int,int,int,int)) =
-  if isShaderValid(shaders[shader.id]):
-    let loc = getShaderLocation(shaders[shader.id], uniformName)
-    rl.setShaderValue(shaders[shader.id], loc, [int32(value[0]),int32(value[1]),int32(value[2]),int32(value[3]) ] )
+proc setShaderValue*(shader:var Shader, uniformName: string, value: (int,int,int,int)) =
+  if isShaderValid(shader.rShader):
+    let loc = getShaderLocation(shader.rShader, uniformName)
+    rl.setShaderValue(shader.rShader, loc, [int32(value[0]),int32(value[1]),int32(value[2]),int32(value[3]) ] )
 
-proc setShaderValue*(shader: Shader, uniformName: string, value:Texture) =
-  if isShaderValid(shaders[shader.id]):
-    let loc = getShaderLocation(shaders[shader.id], uniformName)
-    rl.setShaderValueTexture(shaders[shader.id], loc, value.rTexture )
+proc setShaderValue*(shader:var Shader, uniformName: string, value:var Texture) =
+  if isShaderValid(shader.rShader):
+    let loc = getShaderLocation(shader.rShader, uniformName)
+    rl.setShaderValueTexture(shader.rShader, loc, value.rTexture )
 
 
 
@@ -1118,4 +1116,3 @@ proc draw*( text:Text ,x:float=0.0,y:float=0.0, size:float=16, spacing:float=1.0
 
 #Export raylib colors
 export  Color,LightGray,Gray,DarkGray,Yellow,Gold,Orange,Pink,Red,Maroon,Green,Lime,DarkGreen,SkyBlue,Blue,DarkBlue,Purple,Violet,DarkPurple,Beige,Brown,DarkBrown,White, Black,Blank,Magenta
-export  rl.Font

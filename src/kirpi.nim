@@ -3,6 +3,7 @@
 import tables
 import raylib as rl
 
+
 import graphics, inputs, sound, window
 
 type
@@ -45,9 +46,9 @@ var appWindow:AppWindow
 
 proc `=destroy`(app:var AppWindow) =
   assert isWindowReady(), "Window is already closed!"
+  echo "appWindow"
   #resources clear
   fonts.clear()
-  shaders.clear()
   
   closeAudioDevice()
   closeWindow()
@@ -152,6 +153,7 @@ proc run*(title:string,load: proc(), update: proc(dt:float), draw: proc(), confi
 
     beginDrawing()
     kirpiApp.draw() # draw
+    
     endDrawing()
 
     

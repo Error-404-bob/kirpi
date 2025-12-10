@@ -19,7 +19,7 @@ proc draw() =
     clear(Black)
     setShader(shader)
     draw(texture,100,200)
-    setShader()
+    #setShader()
     
 
 #Run the game

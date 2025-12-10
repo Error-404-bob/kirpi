@@ -167,6 +167,8 @@ clear()     #clears the screen with the active color.
 clear(color:Color)     #clears the screen with the specified color.
 
 #Shader Methods  
+setShader(shader:Shader) #  sets the specified shader for subsequent drawing operations. 
+setShader() # Unsets the currently active shader.
 setShaderValue(shader: Shader, uniformName: string, value: float) # sets the value of a float-typed uniform.
 setShaderValue(shader: Shader, uniformName: string, value: int) #sets the value of a int-typed uniform.
 setShaderValue(shader: Shader, uniformName: string, value: (float,float)) #sets the value of a vec2-typed uniform.
