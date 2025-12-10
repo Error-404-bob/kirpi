@@ -22,6 +22,7 @@ proc draw() =
     ellipse(DrawModes.Line,128,300,80,56)
     draw(newText("Ellipse",getFont() ),98,362,24 )
     #Rect 
+    
     setColor(Green)
     rectangle(DrawModes.Fill,256,128,128,96)
     rectangle(DrawModes.Line,248,120,144,112)
@@ -64,19 +65,15 @@ proc draw() =
     draw(newText("Polygon Sample - Star",getFont() ),460,290,24 )
 
     #Lines
-    push()
-    scale(3,3)
-    translate(-200,-1000)
     
-    setColor(250,250,250,125)
-    setLine(15,JoinTypes.Round,CapTypes.Round)
-    let (mx,my)=inverseTransformPoint(getMouseX(),getMouseY() )
+    setColor(Violet)
+    setLine(12,JoinTypes.Round,CapTypes.Round)
 
     line(
         100.0,500.0,
         200.0,500.0,
-        130.0,480.0,
-        mx,my
+        200.0,450.0,
+        250.0,450.0
     )
     line(
         250.0,450.0,
@@ -87,8 +84,8 @@ proc draw() =
         225.0,470.0,
     )
     setLine(1)
-    #draw(newText("Line",getFont() ),128,470,24 )
-    pop()
+    draw(newText("Line",getFont() ),128,470,24 )
+    
     
 
     #Arc
@@ -98,7 +95,5 @@ proc draw() =
     
 
 
-
-
-
+#Run the game
 run("Drawing Shapes",load,update,draw)

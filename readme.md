@@ -101,6 +101,7 @@ config(settings:AppSettings) = # which is used to config the game app
 
 getFramesPerSecond() # Returns FPS
 getFrameMiliseconds() # Returns time in seconds for last frame (delta time)
+getTime() # Returns the elapsed time in seconds since the application started.
 
 #  opens a window and runs the game 
 run(title:string,load: proc(), update: proc(dt:float), draw: proc(), config : proc (settings : var AppSettings)=nil)  
@@ -119,12 +120,12 @@ shear(shx:float,shy:float)     #shears the coordinate system.
 transformPoint(x:float,y:float)    #converts the given 2D position from global coordinates into screen-space.	
 inverseTransformPoint(x:float,y:float)    #converts the given 2D position from screen-space into global coordinates.	
 replaceTransform(t: Transform)    #replaces the current coordinate transformation with the given Transform object.
-pushState()     #copies the current drawing state (color, line settings, font, etc.) and pushes it onto the state stack.
-popState()      #Restores the previous drawing state by popping it from the state stack.
+
 
 #Object Creation
 newTexture(filename:string):Texture    #creates a new Texture.
 newFont(filename:string, antialias:bool=true):Font #creates a new Font
+newShader(vertexShaderFile: string, fragmentShaderFile: string) #creates a new shader. If you don't want to use a vertex shader, set the vertexShaderFile argument to an empty string("")
 newText(text:string, font:ptr rl.Font):Text    #creates a new drawable Text object.
 newQuad(x,y,width,height,sw,sh:int):Quad  #creates a new Quad.
 newQuad(x,y,width,height:int, texture:var Texture):Quad   #creates a new Quad (it just uses the texture to get width&height properties).
@@ -145,6 +146,9 @@ getLineEndCap():CapTypes  # returns the line cap style used at the end of stroke
 setFont(font:rl.Font) #sets the font
 getFont() :Font   #returns the current font
 getDefaultFont() :Font  #returns the framework's default font.
+pushState()     #copies the current drawing state (color, line settings, font, etc.) and pushes it onto the state stack.
+popState()      #restores the previous drawing state by popping it from the state stack.
+resetState()    # resets the current drawing state (color, line settings, font, etc.) back to its default values.Does not affect previously saved states in the stack.
 
 #Drawing
 polygon(mode:DrawModes,points:varargs[float])   #draws a polygon
@@ -161,6 +165,17 @@ draw(spriteBatch:SpriteBatch, x:float=0,y:float=0)  #draws a spritebatch
 draw(text:Text ,x:float=0.0,y:float=0.0, size:float=16, spacing:float=1.0 )     #draws a text
 clear()     #clears the screen with the active color.
 clear(color:Color)     #clears the screen with the specified color.
+
+#Shader Methods  
+setShaderValue(shader: Shader, uniformName: string, value: float) # sets the value of a float-typed uniform.
+setShaderValue(shader: Shader, uniformName: string, value: int) #sets the value of a int-typed uniform.
+setShaderValue(shader: Shader, uniformName: string, value: (float,float)) #sets the value of a vec2-typed uniform.
+setShaderValue(shader: Shader, uniformName: string, value: (float,float,float))  #sets the value of a vec3-typed uniform.
+setShaderValue(shader: Shader, uniformName: string, value: (float,float,float,float)) #sets the value of a vec4-typed uniform.
+setShaderValue(shader: Shader, uniformName: string, value: (int,int)) #sets the value of a Ivec2-typed uniform.
+setShaderValue(shader: Shader, uniformName: string, value: (int,int,int))  #sets the value of a Ivec3-typed uniform.
+setShaderValue(shader: Shader, uniformName: string, value: (int,int,int,int)) #sets the value of a Ivec4-typed uniform.
+setShaderValue(shader: Shader, uniformName: string, value:Texture) #sets the value of a texture-typed uniform.
 
 ### SOUND
 newSound(fileName:string, soundType:SoundType)  #creates a sound.

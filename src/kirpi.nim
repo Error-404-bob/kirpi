@@ -47,6 +47,7 @@ proc `=destroy`(app:var AppWindow) =
   assert isWindowReady(), "Window is already closed!"
   #resources clear
   fonts.clear()
+  shaders.clear()
   
   closeAudioDevice()
   closeWindow()
@@ -70,6 +71,10 @@ proc getFramesPerSecond*():int =
 
 proc getFrameMiliSeconds*():float =
   result=frameMS
+
+proc getTime*() : float =
+  result=rl.getTime()
+
 
 #Window
 
@@ -164,6 +169,6 @@ proc run*(title:string,load: proc(), update: proc(dt:float), draw: proc(), confi
 
 
 
-export graphics except defaultFilter
+export graphics except defaultFilter,shaders,fonts
 export inputs, window
 export sound 

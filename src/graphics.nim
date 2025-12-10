@@ -147,7 +147,7 @@ proc getShear*(): float =
 ### End of 2D Transform Logic ###
 
 
-
+### Graphic Objects ###
 
 type 
   JoinTypes* = enum
@@ -193,21 +193,34 @@ type
     defWidth:int=1
     defHeight:int=1
 
+  Shader * = object 
+    id:Hash
+
+### End of Graphic Objects ###
+
+
+### Resource Collections ###
+var fonts*: Table[Hash, rl.Font] =initTable[Hash, rl.Font]()
+var shaders*: Table[Hash, rl.Shader] 
+### End of Resource Collections ###
 
 ### Draw State Logic ### 
 
 
-
-
 var defaultFont*:Font
+proc getDefaultFont*():Font =
+  result=defaultFont
+
 type 
   DrawState = object 
-    drawerColor:Color=Color()
+    drawerColor:Color=Color(White)
     drawerLineWidth:float=1.0f
     drawerLineJoin:JoinTypes=JoinTypes.Miter
     drawerLineBeginCap:CapTypes=CapTypes.None
     drawerLineEndCap:CapTypes=CapTypes.None
     currentFont:Font
+    
+    
 
 
 var globalDrawState:DrawState
@@ -222,15 +235,16 @@ proc popState*() =
     globalDrawState = stateStack[^1]
     stateStack.setLen(stateStack.len-1)
 
+proc resetState*() =
+  globalDrawState=DrawState()
+  globalDrawState.currentFont=getDefaultFont()
+
 
 proc setFont*(font:Font) =
   globalDrawState.currentFont=font
 
 proc getFont*():Font =
   result=globalDrawState.currentFont
-
-proc getDefaultFont*():Font =
-  result=defaultFont
 
 
 proc setColor* (r:int, g:int,b:int, a:int) =
@@ -270,6 +284,12 @@ proc getLineBeginCap*():CapTypes =
 proc getLineEndCap*():CapTypes =
   result=globalDrawState.drawerLineEndCap
 
+proc setShader*(shader:Shader) =
+  beginShaderMode(shaders[shader.id])
+
+proc setShader*() =
+  endShaderMode()
+
 
 
 
@@ -279,11 +299,6 @@ type
   DrawModes* = enum Fill,Line
   ArcType* = enum Pie,Open,Closed
 
-#Resource IDs
-var nextFontID=0
-
-#Resource Collections
-var fonts*: Table[Hash, rl.Font] =initTable[Hash, rl.Font]()
 
 
     
@@ -291,7 +306,7 @@ var fonts*: Table[Hash, rl.Font] =initTable[Hash, rl.Font]()
 
 var defaultFilter*:TextureFilters=TextureFilters.Linear
 
-### Creators ###
+### Graphic Object Creators ###
 
 proc newTexture*(filename:string, filter:TextureFilters=Default):Texture =
   result=Texture(rTexture:loadTexture(filename))
@@ -314,13 +329,29 @@ proc newFont*(filename:string, antialias:bool=true): Font =
   var normalizedPath=filename.normalizedPath()
   var hashID:Hash=normalizedPath.hash()
   result=Font(id:hashID)
+  # Load the font if not already cached
   if fonts.hasKey(hashID)==false :
     fonts[hashID]=rl.loadFont(filename)
     if antialias :
       setTextureFilter(fonts[hashID].texture,TextureFilter.Bilinear)
-    
 
-  
+
+proc newShader*(vertexShaderFile: string, fragmentShaderFile: string): Shader =
+  # Normalize file paths
+  let vPath = vertexShaderFile.normalizedPath()
+  let fPath = fragmentShaderFile.normalizedPath()
+
+  # Build a unique key for hashing, separator reduces collision risk
+  let keyString = vPath & "|" & fPath
+  let hashID: Hash = keyString.hash()
+
+  result=Shader(id:hashID)
+
+  # Load the shader if not already cached
+  if shaders.hasKey(hashID)==false :
+    shaders[hashID] = rl.loadShader(vertexShaderFile, fragmentShaderFile)
+
+
 
 proc newText*(text:string, font:Font):Text =
   result=Text(str:text,font:font)
@@ -347,6 +378,9 @@ proc newSpriteBatch*(texture:var Texture, maxSprites:int=1000): SpriteBatch =
   result.data=newSeq[(Quad,Transform)](maxSprites)
 
 
+### End of Graphic Object Creators ###
+
+### Sprite Batcher Methods ###
 proc add*(spriteBatch: var SpriteBatch,x,y:float,r:float=0,sx:float=1,sy:float=1,ox:float=0,oy:float=0,kx:float=0,ky:float=0):int =
   var t:Transform=newTransform(x,y,r,sx,sy,ox,oy,kx,ky)
   let defWidth=spriteBatch.defWidth
@@ -370,9 +404,60 @@ proc add*(spriteBatch: var SpriteBatch, quad:Quad, x,y:float,r:float=0,sx:float=
 proc clear*(spriteBatch: var SpriteBatch) =
   spriteBatch.data.setLen(0)
   
+### End of Sprite Batcher Methods ###
+
+### Shader Methods ###
+proc setShaderValue*(shader: Shader, uniformName: string, value: float) =
+  if isShaderValid(shaders[shader.id]):
+    let loc = getShaderLocation(shaders[shader.id], uniformName)
+    rl.setShaderValue(shaders[shader.id], loc, float32(value) )
+
+proc setShaderValue*(shader: Shader, uniformName: string, value: int) =
+  if isShaderValid(shaders[shader.id]):
+    let loc = getShaderLocation(shaders[shader.id], uniformName)
+    rl.setShaderValue(shaders[shader.id], loc, int32(value) )
+
+proc setShaderValue*(shader: Shader, uniformName: string, value: (float,float)) =
+  if isShaderValid(shaders[shader.id]):
+    let loc = getShaderLocation(shaders[shader.id], uniformName)
+    rl.setShaderValue(shaders[shader.id], loc, Vector2(x:value[0],y:value[1]))
+
+proc setShaderValue*(shader: Shader, uniformName: string, value: (float,float,float)) =
+  if isShaderValid(shaders[shader.id]):
+    let loc = getShaderLocation(shaders[shader.id], uniformName)
+    rl.setShaderValue(shaders[shader.id], loc, Vector3(x:value[0],y:value[1],z:value[2]))
+
+proc setShaderValue*(shader: Shader, uniformName: string, value: (float,float,float,float)) =
+  if isShaderValid(shaders[shader.id]):
+    let loc = getShaderLocation(shaders[shader.id], uniformName)
+    rl.setShaderValue(shaders[shader.id], loc, Vector4(x:value[0],y:value[1],z:value[2],w:value[3]) )
+
+proc setShaderValue*(shader: Shader, uniformName: string, value: (int,int)) =
+  if isShaderValid(shaders[shader.id]):
+    let loc = getShaderLocation(shaders[shader.id], uniformName)
+    rl.setShaderValue(shaders[shader.id], loc, [int32(value[0]),int32(value[1]) ] )
+
+proc setShaderValue*(shader: Shader, uniformName: string, value: (int,int,int)) =
+  if isShaderValid(shaders[shader.id]):
+    let loc = getShaderLocation(shaders[shader.id], uniformName)
+    rl.setShaderValue(shaders[shader.id], loc, [int32(value[0]),int32(value[1]),int32(value[2]) ] )
+
+proc setShaderValue*(shader: Shader, uniformName: string, value: (int,int,int,int)) =
+  if isShaderValid(shaders[shader.id]):
+    let loc = getShaderLocation(shaders[shader.id], uniformName)
+    rl.setShaderValue(shaders[shader.id], loc, [int32(value[0]),int32(value[1]),int32(value[2]),int32(value[3]) ] )
+
+proc setShaderValue*(shader: Shader, uniformName: string, value:Texture) =
+  if isShaderValid(shaders[shader.id]):
+    let loc = getShaderLocation(shaders[shader.id], uniformName)
+    rl.setShaderValueTexture(shaders[shader.id], loc, value.rTexture )
 
 
 
+
+
+
+### End of Shader Methods ###
 
 
 proc pixel*(x:float,y:float) =
@@ -933,10 +1018,6 @@ proc draw*( texture:Texture, quad:Quad, x:float=0.0,y:float=0.0) =
   let tcx2:float=tcx1+quad.w/quad.sw
   let tcy2:float=tcy1+quad.h/quad.sh
 
-  
-
-  
-
   # Triangle 1: v1, v2, v3
   texCoord2f(tcx2, tcy2); vertex2f(v3x, v3y)
   texCoord2f(tcx2, tcy1); vertex2f(v2x, v2y)
@@ -946,8 +1027,7 @@ proc draw*( texture:Texture, quad:Quad, x:float=0.0,y:float=0.0) =
   texCoord2f(tcx1, tcy2); vertex2f(v4x, v4y)
   texCoord2f(tcx2, tcy2); vertex2f(v3x, v3y)
   texCoord2f(tcx1, tcy1); vertex2f(v1x, v1y)
-  
-  
+
 
   rlEnd()
 
