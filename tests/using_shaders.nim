@@ -90,4 +90,4 @@ proc draw() =
     draw(platform,700,400)
 
 #Run the game
-run("Drawing Shapes",load,update,draw) # start the game
+run("Using Shaders",load,update,draw) # start the game

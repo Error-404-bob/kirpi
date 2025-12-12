@@ -2,9 +2,7 @@ import ../src/kirpi
 import math
 
 
-var testFont:Font
 proc load() =
-    testFont=newFont("tests/resources/Fredoka-Bold.ttf")
     discard
 
 proc update( dt:float) =
@@ -17,17 +15,17 @@ proc draw() =
     #Circles
     circle(DrawModes.Fill,128,128,64)
     circle(DrawModes.Line,128,128,72)
-    draw(newText("Circle",getFont() ),102,210,24 )
+    draw(newText("Circle",getDefaultFont() ),102,210,24 )
     #Ellipses
     setColor(Yellow)
     ellipse(DrawModes.Fill,128,300,72,48)
     ellipse(DrawModes.Line,128,300,80,56)
-    draw(newText("Ellipse",getFont() ),98,362,24 )
+    draw(newText("Ellipse",getDefaultFont() ),98,362,24 )
     #Rectangles     
     setColor(Green)
     rectangle(DrawModes.Fill,256,128,128,96)
     rectangle(DrawModes.Line,248,120,144,112)
-    draw(newText("Rectangle",getFont() ),277,235,24 )
+    draw(newText("Rectangle",getDefaultFont() ),277,235,24 )
 
     #Polygon
     setColor(Red)
@@ -43,14 +41,13 @@ proc draw() =
         390, 450, 
         350, 450, 
         350, 400, 
-        
     ]
     polygon(DrawModes.Fill, housePoints)
-    draw(newText("Polygon Sample - Home",getFont() ),290,455,24 )
+    draw(newText("Polygon Sample - Home",getDefaultFont() ),290,455,24 )
 
     #Polygon -Star Shape
     setColor(Blue)
-    let cx = 550.0 # center x
+    let cx = 565.0 # center x
     let cy = 200.0 # center y
     let radiusOuter = 100.0
     let radiusInner = 50.0
@@ -63,10 +60,9 @@ proc draw() =
         starPoints.add(cx + cos(angleInner) * radiusInner)
         starPoints.add(cy + sin(angleInner) * radiusInner)
     polygon(DrawModes.Fill, starPoints)
-    draw(newText("Polygon Sample - Star",getFont() ),460,290,24 )
+    draw(newText("Polygon Sample - Star",getDefaultFont() ),460,290,24 )
 
     #Lines
-    
     setColor(Violet)
     setLine(12,JoinTypes.Round,CapTypes.Round)
 
@@ -85,14 +81,12 @@ proc draw() =
         225.0,470.0,
     )
     setLine(1)
-    draw(newText("Line",getFont() ),128,470,24 )
+    draw(newText("Line",getDefaultFont() ),128,470,24 )
     
-    
-
     #Arc
     setColor(Orange)
     arc(DrawModes.Fill,ArcType.Pie,630,450,64,0,PI+PI/3,32)
-    draw(newText("Arc",getFont() ),610,520,24 )
+    draw(newText("Arc",getDefaultFont() ),610,520,24 )
     
 
 

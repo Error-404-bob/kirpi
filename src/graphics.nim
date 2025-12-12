@@ -81,6 +81,7 @@ proc pop*() =
   if transformStack.len > 0:
     globalTransform = transformStack[^1]
     transformStack.setLen(transformStack.len-1)
+    
 
 proc translate*(dx, dy: float) =
   globalTransform = matMul(matTranslate(dx, dy), globalTransform)
@@ -136,13 +137,25 @@ proc decompose2D(m: Transform): tuple[rotation: float, scaleX: float, scaleY: fl
 proc getScale*(): tuple[sx:float, sy:float] =
   let (_, sx, sy, _) = decompose2D(globalTransform)
   result=(sx, sy)
+  
+proc getScale*(transform:Transform): tuple[sx:float, sy:float] =
+  let (_, sx, sy, _) = decompose2D(transform)
+  result=(sx, sy)
 
 proc getRotation*(): float =
   let (rot, _, _, _) = decompose2D(globalTransform)
   result=rot
 
+proc getRotation*(transform:Transform): float =
+  let (rot, _, _, _) = decompose2D(transform)
+  result=rot
+
 proc getShear*(): float =
   let (_, _, _, sh) = decompose2D(globalTransform)
+  result=sh
+
+proc getShear*(transform:Transform): float =
+  let (_, _, _, sh) = decompose2D(transform)
   result=sh
   
 ### End of 2D Transform Logic ###
@@ -483,29 +496,8 @@ proc pixel*(x:float,y:float) =
   var (tx,ty)=transformPoint(x,y)
   drawPixel(int32(tx), int32(ty),globalDrawState.drawerColor )
 
-proc polygon*(mode:DrawModes,points:varargs[float]) =
-    var allPoints:seq[Vec2]
-    for i in countup(0, points.len - 1, 2):
-        var pTransformed=transformPoint(points[i],points[i+1])
-        allPoints.add( Vec2( x:pTransformed[0],y:pTransformed[1]) )
-    
-    if mode==Fill :
-      
-      var tris=triangulate(allPoints)
-      var counter:int=0
-      for t in tris:
-        drawTriangle(Vector2(x:t.c.x,y:t.c.y),Vector2(x:t.b.x,y:t.b.y),Vector2(x:t.a.x,y:t.a.y),globalDrawState.drawerColor)
+
         
-    else :
-      for i in 0..<allPoints.len :
-        var a,b:Vector2
-        a=Vector2(x:allPoints[i].x,y:allPoints[i].y)
-        if i<allPoints.len-1 :
-          b=Vector2(x:allPoints[i+1].x,y:allPoints[i+1].y)
-        else :
-          b=Vector2(x:allPoints[0].x,y:allPoints[0].y)
-        
-        drawLine(a,b,globalDrawState.drawerColor)
 
 proc getSmoothSegmentCount(angleDiff: float, radius: float, scaleFactor: float): int =
   let segStep=5.0
@@ -581,13 +573,27 @@ proc line*(points:varargs[float]) =
   if globalDrawState.drawerLineWidth>0.0 :
     if allPoints.len>2 :
       
-      #Implementing bevel,miter,round join
+      var isClosedPoly=false
+      var pointsLen=allPoints.len
+      if allPoints[0]==allPoints[allPoints.len-1] :
+        #Closed Poly Lines Exception
+        pointsLen=allPoints.len+1
+        isClosedPoly=true
+      
       var prevIntersectionTestTop:Option[Vector2]=none(Vector2)
       var prevIntersectionTestDown:Option[Vector2]=none(Vector2)
-      for i in 0..<allPoints.len-2:
-        let p1=allPoints[i]
-        let p2=allPoints[i+1]
-        let p3=allPoints[i+2]
+      var p1,p2,p3:Vector2
+      for i in 0..<pointsLen-2:
+        if i==allPoints.len-2 :
+          #Closed Poly Lines Exception
+          p1=allPoints[allPoints.len-2]
+          p2=allPoints[allPoints.len-1]
+          p3=allPoints[1]
+        else :
+          #Default 
+          p1=allPoints[i]
+          p2=allPoints[i+1]
+          p3=allPoints[i+2]
 
         let seg1=p2-p1
         let seg1Unit=seg1.normalize()
@@ -643,51 +649,51 @@ proc line*(points:varargs[float]) =
           s1d=prevIntersectionTestDown.get()
 
         #Implementing Caps
-          
-        if i==0 :
-          
-          if globalDrawState.drawerLineBeginCap==CapTypes.Round :
-            let radius=halfLineWidth
-            let beginAngle=rm.angle(Vector2( x: 1.0,y: 0.0), -seg1Normal )
-            let endAngle=beginAngle+PI
+        if isClosedPoly==false :
+          if i==0 :
             
-            var arcPoints=getArcPoints( p1.x,p1.y,radius,radius,beginAngle,endAngle,roundedCapSegCount )
-            for n in countup(0, arcPoints.len - 3, 2) :
-              var ax,ay,bx,by:float
-              #Fill Arc
-              ax=arcPoints[n]
-              ay=arcPoints[n+1]
-              bx=arcPoints[n+2]
-              by=arcPoints[n+3]
+            if globalDrawState.drawerLineBeginCap==CapTypes.Round :
+              let radius=halfLineWidth
+              let beginAngle=rm.angle(Vector2( x: 1.0,y: 0.0), -seg1Normal )
+              let endAngle=beginAngle+PI
+              
+              var arcPoints=getArcPoints( p1.x,p1.y,radius,radius,beginAngle,endAngle,roundedCapSegCount )
+              for n in countup(0, arcPoints.len - 3, 2) :
+                var ax,ay,bx,by:float
+                #Fill Arc
+                ax=arcPoints[n]
+                ay=arcPoints[n+1]
+                bx=arcPoints[n+2]
+                by=arcPoints[n+3]
 
-              tris.add( Vector2(x:p1.x, y: p1.y) )
-              tris.add(Vector2(x: bx, y: by) )
-              tris.add(Vector2(x: ax, y: ay) )
-          elif globalDrawState.drawerLineBeginCap==CapTypes.Square :
-            s1a-=seg1Unit*halfLineWidth
-            s1d-=seg1Unit*halfLineWidth
-        elif i==allPoints.len-3 :
-          if globalDrawState.drawerLineEndCap==CapTypes.Round :
-            let radius=halfLineWidth
-            let beginAngle=rm.angle(Vector2( x: 1.0,y: 0.0), seg2Normal )
-            let endAngle=beginAngle+PI
-            var arcPoints=getArcPoints( p3.x,p3.y,radius,radius,beginAngle,endAngle,roundedCapSegCount )
-            for n in countup(0, arcPoints.len - 3, 2) :
-              var ax,ay,bx,by:float
-              #Fill Arc
-              ax=arcPoints[n]
-              ay=arcPoints[n+1]
-              bx=arcPoints[n+2]
-              by=arcPoints[n+3]
+                tris.add( Vector2(x:p1.x, y: p1.y) )
+                tris.add(Vector2(x: bx, y: by) )
+                tris.add(Vector2(x: ax, y: ay) )
+            elif globalDrawState.drawerLineBeginCap==CapTypes.Square :
+              s1a-=seg1Unit*halfLineWidth
+              s1d-=seg1Unit*halfLineWidth
+          elif i==allPoints.len-3 :
+            if globalDrawState.drawerLineEndCap==CapTypes.Round :
+              let radius=halfLineWidth
+              let beginAngle=rm.angle(Vector2( x: 1.0,y: 0.0), seg2Normal )
+              let endAngle=beginAngle+PI
+              var arcPoints=getArcPoints( p3.x,p3.y,radius,radius,beginAngle,endAngle,roundedCapSegCount )
+              for n in countup(0, arcPoints.len - 3, 2) :
+                var ax,ay,bx,by:float
+                #Fill Arc
+                ax=arcPoints[n]
+                ay=arcPoints[n+1]
+                bx=arcPoints[n+2]
+                by=arcPoints[n+3]
 
-              tris.add( Vector2(x: p3.x, y: p3.y) )
-              tris.add( Vector2(x: bx, y: by)  )
-              tris.add( Vector2(x: ax, y: ay) )
-          elif globalDrawState.drawerLineEndCap==CapTypes.Square :
-            s2b+=seg2Unit*halfLineWidth
-            s2c+=seg2Unit*halfLineWidth
+                tris.add( Vector2(x: p3.x, y: p3.y) )
+                tris.add( Vector2(x: bx, y: by)  )
+                tris.add( Vector2(x: ax, y: ay) )
+            elif globalDrawState.drawerLineEndCap==CapTypes.Square :
+              s2b+=seg2Unit*halfLineWidth
+              s2c+=seg2Unit*halfLineWidth
           
-        #Drawing Segment-1 Quad
+        #Drawing Line Segment-1 Quad
         tris.add( Vector2(x: s1c.x, y: s1c.y))
         tris.add( Vector2(x: s1b.x, y: s1b.y))
         tris.add( Vector2(x: s1a.x, y: s1a.y))
@@ -697,7 +703,7 @@ proc line*(points:varargs[float]) =
         tris.add( Vector2(x: s1c.x, y: s1c.y))
         tris.add( Vector2(x: s1a.x, y: s1a.y))
 
-        #Drawing Last Segment Quad
+        #Drawing Line Last Segment Quad
         if i==allPoints.len-3 :
           tris.add( Vector2(x: s2c.x, y: s2c.y))
           tris.add( Vector2(x: s2b.x, y: s2b.y))
@@ -710,7 +716,6 @@ proc line*(points:varargs[float]) =
 
         
         #Implementing Join Types
-        
         let np1=if normalSide == -1 : s1c else : s1b
     
         let np2=if normalSide == -1 : s2d else : s2a
@@ -874,21 +879,36 @@ proc line*(points:varargs[float]) =
     for i in 0..<tris.len: 
       var tp=transformPoint(tris[i].x,tris[i].y)
       tris[i]=Vector2(x:tp[0],y: tp[1]) 
-      
-    rlBegin(Triangles)
-    color4ub(globalDrawState.drawerColor.r, globalDrawState.drawerColor.g, globalDrawState.drawerColor.b, globalDrawState.drawerColor.a)
-    for n in countup(0, tris.len - 3, 3) :
-      vertex2f(tris[n].x,tris[n].y)
-      vertex2f(tris[n+1].x,tris[n+1].y)
-      vertex2f(tris[n+2].x,tris[n+2].y)
-    rlEnd()
-      
-      
     
-      
+    for n in countup(0, tris.len - 3, 3) :
+      drawTriangle( tris[n],tris[n+1],tris[n+2],globalDrawState.drawerColor )
+    
+    
 
 
+proc polygon*(mode:DrawModes,points:varargs[float]) =
+    var allPoints:seq[Vec2]
+    for i in countup(0, points.len - 1, 2):
+        var pTransformed=transformPoint(points[i],points[i+1])
+        allPoints.add( Vec2( x:pTransformed[0],y:pTransformed[1]) )
+    
+    if mode==Fill :
       
+      var tris=triangulate(allPoints)
+      var counter:int=0
+      for t in tris:
+        drawTriangle(Vector2(x:t.c.x,y:t.c.y),Vector2(x:t.b.x,y:t.b.y),Vector2(x:t.a.x,y:t.a.y),globalDrawState.drawerColor)
+        
+    else :
+      var lines:seq[float]
+      for i in 0..<allPoints.len :
+        lines.add(allPoints[i].x)
+        lines.add(allPoints[i].y)
+        if i<allPoints.len-1 :
+          lines.add(allPoints[0].x)
+          lines.add(allPoints[0].y)
+        
+        line(lines)
     
 
 
@@ -1031,9 +1051,10 @@ proc draw*( texture:Texture, quad:Quad, x:float=0.0,y:float=0.0) =
   let (v4x, v4y) = transformPoint(p4x, p4y)
 
   setTexture(texture.rTexture.id) # Bind texture
+  
   rlBegin(Triangles)
   color4ub(globalDrawState.drawerColor.r, globalDrawState.drawerColor.g, globalDrawState.drawerColor.b, globalDrawState.drawerColor.a)
-
+  normal3f(0.0, 0.0, 1.0); 
   #Quad normalized mapping
   let tcx1:float=quad.x/quad.sw
   let tcy1:float=quad.y/quad.sh
@@ -1052,8 +1073,12 @@ proc draw*( texture:Texture, quad:Quad, x:float=0.0,y:float=0.0) =
 
 
   rlEnd()
-
   setTexture(0) # Unbind texture
+
+  
+  
+  
+  
 
 proc draw*( texture:Texture,x:float=0.0,y:float=0.0) =
   var quad=newQuad(0,0,texture.rTexture.width,texture.rTexture.height,texture.rTexture.width,texture.rTexture.height)
@@ -1072,7 +1097,7 @@ proc draw * ( spriteBatch:SpriteBatch, x:float=0,y:float=0) =
     translate(x,y)
     applyTransform(t)
 
-
+    var scale=t.getScale()
     let p1x = float(q.x)
     let p1y = float(q.y)
     let p2x = float(q.x + q.w)
@@ -1094,16 +1119,27 @@ proc draw * ( spriteBatch:SpriteBatch, x:float=0,y:float=0) =
     let tcy2:float=tcy1+q.h/q.sh
 
     
+    if scale.sx>=0.0 and scale.sy>=0.0 :
+      # Triangle 1: v1, v2, v3
+      texCoord2f(tcx2, tcy2); vertex2f(v3x, v3y)
+      texCoord2f(tcx2, tcy1); vertex2f(v2x, v2y)
+      texCoord2f(tcx1, tcy1); vertex2f(v1x, v1y)
 
-    # Triangle 1: v1, v2, v3
-    texCoord2f(tcx2, tcy2); vertex2f(v3x, v3y)
-    texCoord2f(tcx2, tcy1); vertex2f(v2x, v2y)
-    texCoord2f(tcx1, tcy1); vertex2f(v1x, v1y)
+      # Triangle 2: v1, v3, v4
+      texCoord2f(tcx1, tcy2); vertex2f(v4x, v4y)
+      texCoord2f(tcx2, tcy2); vertex2f(v3x, v3y)
+      texCoord2f(tcx1, tcy1); vertex2f(v1x, v1y)
+    else :
+      # Negative scale values exception  (inverse faces)
+      # Triangle 1: v1, v2, v3
+      texCoord2f(tcx1, tcy1); vertex2f(v1x, v1y)
+      texCoord2f(tcx2, tcy1); vertex2f(v2x, v2y)
+      texCoord2f(tcx2, tcy2); vertex2f(v3x, v3y)
 
-    # Triangle 2: v1, v3, v4
-    texCoord2f(tcx1, tcy2); vertex2f(v4x, v4y)
-    texCoord2f(tcx2, tcy2); vertex2f(v3x, v3y)
-    texCoord2f(tcx1, tcy1); vertex2f(v1x, v1y)
+      # Triangle 2: v1, v3, v4
+      texCoord2f(tcx1, tcy1); vertex2f(v1x, v1y)
+      texCoord2f(tcx2, tcy2); vertex2f(v3x, v3y)
+      texCoord2f(tcx1, tcy2); vertex2f(v4x, v4y)
 
     pop()
     
@@ -1140,4 +1176,4 @@ proc draw*( text:Text ,x:float=0.0,y:float=0.0, size:float=16, spacing:float=1.0
 ### End of Drawing Operations
 
 #Export raylib colors
-export  Color,LightGray,Gray,DarkGray,Yellow,Gold,Orange,Pink,Red,Maroon,Green,Lime,DarkGreen,SkyBlue,Blue,DarkBlue,Purple,Violet,DarkPurple,Beige,Brown,DarkBrown,White, Black,Blank,Magenta
+export  rl.Color,LightGray,Gray,DarkGray,Yellow,Gold,Orange,Pink,Red,Maroon,Green,Lime,DarkGreen,SkyBlue,Blue,DarkBlue,Purple,Violet,DarkPurple,Beige,Brown,DarkBrown,White, Black,Blank,Magenta

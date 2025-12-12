@@ -141,7 +141,8 @@ proc run*(title:string,load: proc(), update: proc(dt:float), draw: proc(), confi
   initAppWindow(title,kirpiApp.settings)
   graphics.defaultFont=newFont("src/resources/RobotoSlab-Regular.ttf")
   setFont(graphics.defaultFont)
-  echo "font loaded !"
+  setColor(White)
+
   kirpiApp.load() # load 
 
   while not windowShouldClose() :
