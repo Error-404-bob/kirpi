@@ -9,14 +9,15 @@ var animFrame:int=0
 # Simple step counter for timing
 var step=0
 
-# Load resources and build quad list
+
 proc load() =
+    # Load resources and build quad list
     zombie_atlas=newTexture("tests/resources/kenney_zombie_run.png")
     # Slice atlas horizontally into 96x128 quads
     for i in 0..<8 :
         runAnim.add( newQuad( i*96,0,96,128,zombie_atlas) )
 
-# Update animation logic
+
 proc update( dt:float) =
     # Advance animation every 10 updates
     if (step mod 10) == 0 :
@@ -31,10 +32,12 @@ proc draw() =
     setColor( White )
     draw(zombie_atlas,0,0)
 
+    #Current frame 
+    var frame:Quad=runAnim[animFrame]
+
     # Highlight active frame bounds on the atlas
     setColor(Yellow)
     setLine(5)
-    var frame:Quad=runAnim[animFrame]
     rectangle(DrawModes.Line,float(frame.x),float(frame.y),float(frame.w),float(frame.h) )
 
     # Draw selected frame at a given position

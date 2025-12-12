@@ -42,56 +42,56 @@ proc newSound*(fileName:string, soundType:SoundType):Sound =
         result.sourceType=SoundType.Stream
         
 
-proc playSound*(sound:Sound) =
+proc play*(sound:var Sound) =
     if sound.sourceType==SoundType.Static:
         rl.playSound(sound.sourceStatic)
     elif sound.sourceType==SoundType.Stream:
         rl.playMusicStream(soundStreamSources[sound.sourceStreamID] )
 
-proc stopSound*(sound:Sound) =
+proc stop*(sound:var Sound) =
     if sound.sourceType==SoundType.Static:
         rl.stopSound(sound.sourceStatic)
     elif sound.sourceType==SoundType.Stream:
         rl.stopMusicStream(soundStreamSources[sound.sourceStreamID])
 
-proc pauseSound*(sound:Sound) =
+proc pause*(sound:var Sound) =
     if sound.sourceType==SoundType.Static:
         rl.pauseSound(sound.sourceStatic)
     elif sound.sourceType==SoundType.Stream:
         rl.pauseMusicStream(soundStreamSources[sound.sourceStreamID])
 
-proc resumeSound*(sound:Sound) =
+proc resume*(sound:var Sound) =
     if sound.sourceType==SoundType.Static:
         rl.resumeSound(sound.sourceStatic)
     elif sound.sourceType==SoundType.Stream:
         rl.resumeMusicStream(soundStreamSources[sound.sourceStreamID])
 
-proc isSoundPlaying*(sound:Sound):bool =
+proc isPlaying*(sound:var Sound):bool =
     if sound.sourceType==SoundType.Static:
         result=rl.isSoundPlaying(sound.sourceStatic)
     elif sound.sourceType==SoundType.Stream:
         result=rl.isMusicStreamPlaying(soundStreamSources[sound.sourceStreamID])
 
-proc isSoundValid*(sound:Sound):bool =
+proc isValid*(sound:var Sound):bool =
     if sound.sourceType==SoundType.Static:
         result=rl.isSoundValid(sound.sourceStatic)
     elif sound.sourceType==SoundType.Stream:
         result=rl.isMusicValid(soundStreamSources[sound.sourceStreamID])
     
 
-proc setSoundVolume*(sound:Sound, volume:float) =
+proc setVolume*(sound:var Sound, volume:float) =
     if sound.sourceType==SoundType.Static:
         rl.setSoundVolume(sound.sourceStatic, volume)
     elif sound.sourceType==SoundType.Stream:
         rl.setMusicVolume(soundStreamSources[sound.sourceStreamID], volume)
 
-proc setSoundPitch*(sound:Sound, pitch:float) =
+proc setPitch*(sound:var Sound, pitch:float) =
     if sound.sourceType==SoundType.Static:
         rl.setSoundPitch(sound.sourceStatic, pitch)
     elif sound.sourceType==SoundType.Stream:
         rl.setMusicPitch(soundStreamSources[sound.sourceStreamID], pitch)
 
-proc setSoundPan*(sound:Sound, pan:float) =
+proc setPan*(sound:var Sound, pan:float) =
     if sound.sourceType==SoundType.Static:
         rl.setSoundPan(sound.sourceStatic, pan)
     elif sound.sourceType==SoundType.Stream:

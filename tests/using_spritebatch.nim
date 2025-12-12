@@ -24,6 +24,7 @@ proc reCreateFishes(count:int) =
   fishes.setLen(0)
   # Clear previous frame's batched sprites
   spriteBatch.clear()
+  # Add fish instances
   for i in 0..<count :
     var nFish=Fish(x:rand(window.getWidth().float), y:rand(window.getWidth().float))
     nFish.beginY=nFish.y

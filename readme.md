@@ -166,33 +166,42 @@ draw(text:Text ,x:float=0.0,y:float=0.0, size:float=16, spacing:float=1.0 )     
 clear()     #clears the screen with the active color.
 clear(color:Color)     #clears the screen with the specified color.
 
+#Text Methods 
+getSizeWith(text:Text,fontSize:float,spacing:float=1.0) :tuple[x:float,y:float] # returns the text size using the specified font size and spacing.
+
+#SpriteBatch Methods 
+#adds an instance to SpriteBatch
+add(spriteBatch: var SpriteBatch,x,y:float,r:float=0,sx:float=1,sy:float=1,ox:float=0,oy:float=0,kx:float=0,ky:float=0):int
+#adds an instance to SpriteBatch with Quad
+add(spriteBatch: var SpriteBatch, quad:Quad, x,y:float,r:float=0,sx:float=1,sy:float=1,ox:float=0,oy:float=0,kx:float=0,ky:float=0):int 
+
 #Shader Methods  
 setShader(shader:Shader) #  sets the specified shader for subsequent drawing operations. 
 setShader() # Unsets the currently active shader.
-setShaderValue(shader: Shader, uniformName: string, value: float) # sets the value of a float-typed uniform.
-setShaderValue(shader: Shader, uniformName: string, value: int) #sets the value of a int-typed uniform.
-setShaderValue(shader: Shader, uniformName: string, value: (float,float)) #sets the value of a vec2-typed uniform.
-setShaderValue(shader: Shader, uniformName: string, value: (float,float,float))  #sets the value of a vec3-typed uniform.
-setShaderValue(shader: Shader, uniformName: string, value: (float,float,float,float)) #sets the value of a vec4-typed uniform.
-setShaderValue(shader: Shader, uniformName: string, value: (int,int)) #sets the value of a Ivec2-typed uniform.
-setShaderValue(shader: Shader, uniformName: string, value: (int,int,int))  #sets the value of a Ivec3-typed uniform.
-setShaderValue(shader: Shader, uniformName: string, value: (int,int,int,int)) #sets the value of a Ivec4-typed uniform.
-setShaderValue(shader: Shader, uniformName: string, value:Texture) #sets the value of a texture-typed uniform.
+setValue(shader: Shader, uniformName: string, value: float) # sets the value of a float-typed uniform.
+setValue(shader: Shader, uniformName: string, value: int) #sets the value of a int-typed uniform.
+setValue(shader: Shader, uniformName: string, value: (float,float)) #sets the value of a vec2-typed uniform.
+setValue(shader: Shader, uniformName: string, value: (float,float,float))  #sets the value of a vec3-typed uniform.
+setValue(shader: Shader, uniformName: string, value: (float,float,float,float)) #sets the value of a vec4-typed uniform.
+setValue(shader: Shader, uniformName: string, value: (int,int)) #sets the value of a Ivec2-typed uniform.
+setValue(shader: Shader, uniformName: string, value: (int,int,int))  #sets the value of a Ivec3-typed uniform.
+setValue(shader: Shader, uniformName: string, value: (int,int,int,int)) #sets the value of a Ivec4-typed uniform.
+setValue(shader: Shader, uniformName: string, value:Texture) #sets the value of a texture-typed uniform.
 
 ### SOUND
 newSound(fileName:string, soundType:SoundType)  #creates a sound.
 
-playSound(sound:Sound)  #plays the specified sound.	
-stopSound(sound:Sound)  #stops the specified sound.
-pauseSound(sound:Sound)     #Pauses the specific sound.
-resumeSound(sound:Sound)    #Resumes the specific sound.
+play(sound:Sound)  #plays the specified sound.	
+stop(sound:Sound)  #stops the specified sound.
+pause(sound:Sound)     #Pauses the specific sound.
+resume(sound:Sound)    #Resumes the specific sound.
 
-isSoundPlaying(sound:Sound) #returns whether the specific sound is playing
-isSoundValid(sound:Sound) #returns whether the specific sound is valid
+isPlaying(sound:Sound) #returns whether the specific sound is playing
+isValid(sound:Sound) #returns whether the specific sound is valid
 
-setSoundVolume(sound:Sound)    #sets the volume of the specified sound
-setSoundPitch(sound:Sound)    #sets the pitch of the specified sound
-setSoundPan(sound:Sound)    #sets the pan of the specified sound
+setVolume(sound:Sound)    #sets the volume of the specified sound
+setPitch(sound:Sound)    #sets the pitch of the specified sound
+setPan(sound:Sound)    #sets the pan of the specified sound
 
 ### INPUTS
 #Keyboard

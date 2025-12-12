@@ -382,7 +382,7 @@ proc newShader*(vertexShaderFile: string, fragmentShaderFile: string): Shader =
   
 
 
-
+#Text
 proc newText*(text:string, font:Font):Text =
   result=Text(str:text,font:font)
 
@@ -396,7 +396,6 @@ proc newQuad*(x,y,width,height,sw,sh:int):Quad =
 proc newQuad*(x,y,width,height:int, texture:var Texture):Quad =
   result=Quad(x:x,y:y,w:width,h:height,sw:texture.rTexture.width,sh:texture.rTexture.height)
 
-
   
 
 #Sprite Batch
@@ -409,6 +408,17 @@ proc newSpriteBatch*(texture:var Texture, maxSprites:int=1000): SpriteBatch =
 
 
 ### End of Graphic Object Creators ###
+
+### Text Methods ###
+
+proc getSizeWith*(text:Text,fontSize:float,spacing:float=1.0) :tuple[x:float,y:float] =
+  var size=measureText(fonts[text.font.id],text.str,fontSize.float32,spacing.float32)
+  result=(x:size.x,y:size.y)
+  
+
+
+
+### End of Text Methods ###
 
 ### Sprite Batcher Methods ###
 proc add*(spriteBatch: var SpriteBatch,x,y:float,r:float=0,sx:float=1,sy:float=1,ox:float=0,oy:float=0,kx:float=0,ky:float=0):int =
@@ -437,47 +447,47 @@ proc clear*(spriteBatch: var SpriteBatch) =
 ### End of Sprite Batcher Methods ###
 
 ### Shader Methods ###
-proc setShaderValue*(shader:var Shader, uniformName: string, value: float) =
+proc setValue*(shader:var Shader, uniformName: string, value: float) =
   if isShaderValid(shader.rShader):
     let loc = getShaderLocation(shader.rShader, uniformName)
     rl.setShaderValue(shader.rShader, loc, float32(value) )
 
-proc setShaderValue*(shader:var Shader, uniformName: string, value: int) =
+proc setValue*(shader:var Shader, uniformName: string, value: int) =
   if isShaderValid(shader.rShader):
     let loc = getShaderLocation(shader.rShader, uniformName)
     rl.setShaderValue(shader.rShader, loc, int32(value) )
 
-proc setShaderValue*(shader:var  Shader, uniformName: string, value: (float,float)) =
+proc setValue*(shader:var  Shader, uniformName: string, value: (float,float)) =
   if isShaderValid(shader.rShader):
     let loc = getShaderLocation(shader.rShader, uniformName)
     rl.setShaderValue(shader.rShader, loc, Vector2(x:value[0],y:value[1]))
 
-proc setShaderValue*(shader:var Shader, uniformName: string, value: (float,float,float)) =
+proc setValue*(shader:var Shader, uniformName: string, value: (float,float,float)) =
   if isShaderValid(shader.rShader):
     let loc = getShaderLocation(shader.rShader, uniformName)
     rl.setShaderValue(shader.rShader, loc, Vector3(x:value[0],y:value[1],z:value[2]))
 
-proc setShaderValue*(shader:var Shader, uniformName: string, value: (float,float,float,float)) =
+proc setValue*(shader:var Shader, uniformName: string, value: (float,float,float,float)) =
   if isShaderValid(shader.rShader):
     let loc = getShaderLocation(shader.rShader, uniformName)
     rl.setShaderValue(shader.rShader, loc, Vector4(x:value[0],y:value[1],z:value[2],w:value[3]) )
 
-proc setShaderValue*(shader:var Shader, uniformName: string, value: (int,int)) =
+proc setValue*(shader:var Shader, uniformName: string, value: (int,int)) =
   if isShaderValid(shader.rShader):
     let loc = getShaderLocation(shader.rShader, uniformName)
     rl.setShaderValue(shader.rShader, loc, [int32(value[0]),int32(value[1]) ] )
 
-proc setShaderValue*(shader:var Shader, uniformName: string, value: (int,int,int)) =
+proc setValue*(shader:var Shader, uniformName: string, value: (int,int,int)) =
   if isShaderValid(shader.rShader):
     let loc = getShaderLocation(shader.rShader, uniformName)
     rl.setShaderValue(shader.rShader, loc, [int32(value[0]),int32(value[1]),int32(value[2]) ] )
 
-proc setShaderValue*(shader:var Shader, uniformName: string, value: (int,int,int,int)) =
+proc setValue*(shader:var Shader, uniformName: string, value: (int,int,int,int)) =
   if isShaderValid(shader.rShader):
     let loc = getShaderLocation(shader.rShader, uniformName)
     rl.setShaderValue(shader.rShader, loc, [int32(value[0]),int32(value[1]),int32(value[2]),int32(value[3]) ] )
 
-proc setShaderValue*(shader:var Shader, uniformName: string, value:var Texture) =
+proc setValue*(shader:var Shader, uniformName: string, value:var Texture) =
   if isShaderValid(shader.rShader):
     let loc = getShaderLocation(shader.rShader, uniformName)
     rl.setShaderValueTexture(shader.rShader, loc, value.rTexture )
