@@ -2,6 +2,8 @@ import raylib as rl
 import raymath as rm
 import rlgl as rlgl
 import std/strutils
+import algorithm
+import std/unicode
 
 import tables,os,hashes,options
 
@@ -157,7 +159,9 @@ proc getShear*(): float =
 proc getShear*(transform:Transform): float =
   let (_, _, _, sh) = decompose2D(transform)
   result=sh
-  
+
+proc isOrientationFlipped(t: Transform): bool =
+  (t.a * t.d - t.b * t.c) < 0  
 ### End of 2D Transform Logic ###
 
 
@@ -358,13 +362,13 @@ proc newTexture*(filename:string, filter:TextureFilters=Default):Texture =
       setTextureFilter(result.rTexture,TextureFilter.Point)
   
 
-proc newFont*(filename:string, antialias:bool=true): Font =
+proc newFont*(filename:string, antialias:bool=true, rasterSize:int=32): Font =
   var normalizedPath=filename.normalizedPath()
   var hashID:Hash=normalizedPath.hash()
   result=Font(id:hashID)
   # Load the font if not already cached
   if fonts.hasKey(hashID)==false :
-    fonts[hashID]=rl.loadFont(filename)
+    fonts[hashID]=rl.loadFont(filename,rasterSize.int32,0)
     if antialias :
       setTextureFilter(fonts[hashID].texture,TextureFilter.Bilinear)
 
@@ -531,6 +535,11 @@ proc getArcPoints(x:float,y:float,radiusX:float,radiusY:float,angle1:float,angle
     allPoints.add(y+sin(ang)*radiusY)
 
   return allPoints
+
+
+proc isCCW(ax,ay,bx,by,cx,cy:float) :bool =
+  let v:float= (bx - ax)*(cy - ay) - (by - ay)*(cx - ax);
+  result=v>0
 
 
 proc lineIntersection*(A, B, C, D: Vector2): Option[Vector2] =
@@ -890,8 +899,12 @@ proc line*(points:varargs[float]) =
       var tp=transformPoint(tris[i].x,tris[i].y)
       tris[i]=Vector2(x:tp[0],y: tp[1]) 
     
+    var isTransformMirrored:bool=globalTransform.isOrientationFlipped()
     for n in countup(0, tris.len - 3, 3) :
-      drawTriangle( tris[n],tris[n+1],tris[n+2],globalDrawState.drawerColor )
+      if isTransformMirrored :
+        drawTriangle( tris[n+2],tris[n+1],tris[n],globalDrawState.drawerColor )
+      else :
+        drawTriangle( tris[n],tris[n+1],tris[n+2],globalDrawState.drawerColor )
     
     
 
@@ -901,13 +914,17 @@ proc polygon*(mode:DrawModes,points:varargs[float]) =
     for i in countup(0, points.len - 1, 2):
         var pTransformed=transformPoint(points[i],points[i+1])
         allPoints.add( Vec2( x:pTransformed[0],y:pTransformed[1]) )
+        
     
     if mode==Fill :
+      var isTransformMirrored:bool=globalTransform.isOrientationFlipped()
+      if isTransformMirrored :
+        allPoints.reverse()
       
       var tris=triangulate(allPoints)
-      var counter:int=0
       for t in tris:
         drawTriangle(Vector2(x:t.c.x,y:t.c.y),Vector2(x:t.b.x,y:t.b.y),Vector2(x:t.a.x,y:t.a.y),globalDrawState.drawerColor)
+        
         
     else :
       var lines:seq[float]
@@ -1070,17 +1087,30 @@ proc draw*( texture:Texture, quad:Quad, x:float=0.0,y:float=0.0) =
   let tcy1:float=quad.y/quad.sh
   let tcx2:float=tcx1+quad.w/quad.sw
   let tcy2:float=tcy1+quad.h/quad.sh
+  
+  var isTransformMirrored:bool=globalTransform.isOrientationFlipped()
 
-  # Triangle 1: v1, v2, v3
-  texCoord2f(tcx2, tcy2); vertex2f(v3x, v3y)
-  texCoord2f(tcx2, tcy1); vertex2f(v2x, v2y)
-  texCoord2f(tcx1, tcy1); vertex2f(v1x, v1y)
+  if isTransformMirrored :
+    # Triangle 1: v1, v2, v3
+    
+    texCoord2f(tcx1, tcy1); vertex2f(v1x, v1y)
+    texCoord2f(tcx2, tcy1); vertex2f(v2x, v2y)
+    texCoord2f(tcx2, tcy2); vertex2f(v3x, v3y)
 
-  # Triangle 2: v1, v3, v4
-  texCoord2f(tcx1, tcy2); vertex2f(v4x, v4y)
-  texCoord2f(tcx2, tcy2); vertex2f(v3x, v3y)
-  texCoord2f(tcx1, tcy1); vertex2f(v1x, v1y)
+    texCoord2f(tcx1, tcy1); vertex2f(v1x, v1y)
+    texCoord2f(tcx2, tcy2); vertex2f(v3x, v3y)
+    texCoord2f(tcx1, tcy2); vertex2f(v4x, v4y)
+  else :
+    # Triangle 1: v3, v2, v1
+    texCoord2f(tcx2, tcy2); vertex2f(v3x, v3y)
+    texCoord2f(tcx2, tcy1); vertex2f(v2x, v2y)
+    texCoord2f(tcx1, tcy1); vertex2f(v1x, v1y)
+    
 
+     # Triangle 2: v1, v3, v4
+    texCoord2f(tcx1, tcy2); vertex2f(v4x, v4y)
+    texCoord2f(tcx2, tcy2); vertex2f(v3x, v3y)
+    texCoord2f(tcx1, tcy1); vertex2f(v1x, v1y)
 
   rlEnd()
   setTexture(0) # Unbind texture
@@ -1107,7 +1137,6 @@ proc draw * ( spriteBatch:SpriteBatch, x:float=0,y:float=0) =
     translate(x,y)
     applyTransform(t)
 
-    var scale=t.getScale()
     let p1x = float(q.x)
     let p1y = float(q.y)
     let p2x = float(q.x + q.w)
@@ -1128,8 +1157,10 @@ proc draw * ( spriteBatch:SpriteBatch, x:float=0,y:float=0) =
     let tcx2:float=tcx1+q.w/q.sw
     let tcy2:float=tcy1+q.h/q.sh
 
+    var isTransformMirrored:bool=globalTransform.isOrientationFlipped()
+
     
-    if scale.sx>=0.0 and scale.sy>=0.0 :
+    if isTransformMirrored==false :
       # Triangle 1: v1, v2, v3
       texCoord2f(tcx2, tcy2); vertex2f(v3x, v3y)
       texCoord2f(tcx2, tcy1); vertex2f(v2x, v2y)
@@ -1160,28 +1191,81 @@ proc draw * ( spriteBatch:SpriteBatch, x:float=0,y:float=0) =
   
 
 proc draw*( text:Text ,x:float=0.0,y:float=0.0, size:float=16, spacing:float=1.0 ) =
-
   
-  if isFontValid(fonts[text.font.id])==false :
+  if not isFontValid(fonts[text.font.id]):
     echo "Warning: font is nil, cannot draw text."
     return
 
-  let t = globalTransform
+  let scale = size / fonts[text.font.id].baseSize.float
 
-  var matrixArray: array[16, float32]
-  matrixArray[0] = t.a;   matrixArray[4] = t.c;   matrixArray[8] = 0.0;   matrixArray[12] = t.tx
-  matrixArray[1] = t.b;   matrixArray[5] = t.d;   matrixArray[9] = 0.0;   matrixArray[13] = t.ty
-  matrixArray[2] = 0.0;   matrixArray[6] = 0.0;   matrixArray[10] = 1.0;  matrixArray[14] = 0.0
-  matrixArray[3] = 0.0;   matrixArray[7] = 0.0;   matrixArray[11] = 0.0;  matrixArray[15] = 1.0
+  setTexture(fonts[text.font.id].texture.id)
+  rlBegin(Triangles)
+  color4ub(globalDrawState.drawerColor.r,globalDrawState.drawerColor.g,globalDrawState.drawerColor.b,globalDrawState.drawerColor.a)
 
-  pushMatrix()
-  multMatrixf(matrixArray)
-  translatef(x,y,0.0)
-  drawText(fonts[text.font.id],text.str, Vector2(x:0, y:0),Vector2(x:0,y:0),0, size, spacing, globalDrawState.drawerColor)
+  var penX = 0.0
+  var penY = 0.0
+
+  let sw = fonts[text.font.id].texture.width.float
+  let sh = fonts[text.font.id].texture.height.float
+
+  var isTransformMirrored:bool=globalTransform.isOrientationFlipped()
+
+  for ch in text.str:
+    if ch == '\n':
+      penX = 0
+      penY += fonts[text.font.id].baseSize.float * scale
+      continue
+
+    let gi = getGlyphIndex(fonts[text.font.id], toRunes($ch)[0] )
+    if gi < 0: continue
+
+    let g = addr fonts[text.font.id].glyphs[gi]
+    let r = fonts[text.font.id].recs[gi]
+
+    # Local quad (text space)
+    let lx0 = x + (penX + g[].offsetX.float) 
+    let ly0 = y + (penY + g[].offsetY.float*scale) 
+    let lx1 = lx0 + r.width * scale
+    let ly1 = ly0 + r.height * scale
+
+    # World space 
+    let (x0,y0) = transformPoint(lx0, ly0)
+    let (x1,y1) = transformPoint(lx1, ly0)
+    let (x2,y2) = transformPoint(lx1, ly1)
+    let (x3,y3) = transformPoint(lx0, ly1)
+
+    let u0 = r.x / sw
+    let v0 = r.y / sh
+    let u1 = (r.x + r.width) / sw
+    let v1 = (r.y + r.height) / sh
+    
+    if isTransformMirrored :
+      # Triangle 1
+      texCoord2f(u0, v0); vertex2f(x0, y0)
+      texCoord2f(u1, v0); vertex2f(x1, y1)
+      texCoord2f(u1, v1); vertex2f(x2, y2)
+
+      # Triangle 2
+      texCoord2f(u0, v0); vertex2f(x0, y0)
+      texCoord2f(u1, v1); vertex2f(x2, y2)
+      texCoord2f(u0, v1); vertex2f(x3, y3)
+    else :
+      # Triangle 1
+      texCoord2f(u1, v1); vertex2f(x2, y2)
+      texCoord2f(u1, v0); vertex2f(x1, y1)
+      texCoord2f(u0, v0); vertex2f(x0, y0)
+
+      # Triangle 2
+      texCoord2f(u0, v1); vertex2f(x3, y3)
+      texCoord2f(u1, v1); vertex2f(x2, y2)
+      texCoord2f(u0, v0); vertex2f(x0, y0)
+
+    penX += g.advanceX.float * scale + spacing
+
+  rlEnd()
+  setTexture(0)
   
-  
-  popMatrix()
-  discard
+
 
 ### End of Drawing Operations
 

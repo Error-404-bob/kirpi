@@ -124,7 +124,7 @@ replaceTransform(t: Transform)    #replaces the current coordinate transformatio
 
 #Object Creation
 newTexture(filename:string):Texture    #creates a new Texture.
-newFont(filename:string, antialias:bool=true):Font #creates a new Font
+newFont(filename:string, antialias:bool=true, rasterSize:int=32):Font #creates a new Font
 newShader(vertexShaderFile: string, fragmentShaderFile: string) #creates a new shader. If you don't want to use a vertex shader, set the vertexShaderFile argument to an empty string("")
 newText(text:string, font:ptr rl.Font):Text    #creates a new drawable Text object.
 newQuad(x,y,width,height,sw,sh:int):Quad  #creates a new Quad.
