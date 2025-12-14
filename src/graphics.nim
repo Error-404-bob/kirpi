@@ -184,7 +184,7 @@ type
     Linear
   
   Font* = object
-    id:Hash
+    id*:Hash
   
   Text* = object 
     str:string=""
@@ -371,6 +371,8 @@ proc newFont*(filename:string, antialias:bool=true, rasterSize:int=32): Font =
     fonts[hashID]=rl.loadFont(filename,rasterSize.int32,0)
     if antialias :
       setTextureFilter(fonts[hashID].texture,TextureFilter.Bilinear)
+
+
 
 
 proc newShader*(vertexShaderFile: string, fragmentShaderFile: string): Shader =

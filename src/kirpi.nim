@@ -2,6 +2,8 @@
 
 import tables, std/private/ospaths2
 import raylib as rl
+import rsc
+import hashes
 
 
 import graphics, inputs, sound, window
@@ -29,7 +31,7 @@ type
     printFPS*:bool=false
     printFrameTime*:bool=false
     defaultTextureFilter*:TextureFilterSettings=TextureFilterSettings.Linear
-    antialias=true
+    antialias*:bool=true
     
   App* = object
     settings:AppSettings
@@ -119,10 +121,10 @@ proc initAppWindow(title:string,appSettings:AppSettings) =
     if isImageValid(iconIMG) :
       setWindowIcon(iconIMG)
     else :
-      var defaultIconIMG=loadImage(currentSourcePath.parentDir() &  "/resources/icon.png")
+      var defaultIconIMG=loadImageFromMemory(".png",rsc.defaultIconData)
       setWindowIcon(defaultIconIMG)
   else :
-    var defaultIconIMG=loadImage(currentSourcePath.parentDir() &  "/resources/icon.png")
+    var defaultIconIMG=loadImageFromMemory(".png",rsc.defaultIconData)
     setWindowIcon(defaultIconIMG)
 
   initAudioDevice()
@@ -139,8 +141,16 @@ proc run*(title:string,load: proc(), update: proc(dt:float), draw: proc(), confi
   if config!=nil :
     config(kirpiApp.settings)
   initAppWindow(title,kirpiApp.settings)
-  graphics.defaultFont=newFont(currentSourcePath.parentDir() & "/resources/RobotoSlab-Regular.ttf")
+
+  #Loading default font from data
+  var defaultFontID:Hash=("kirpi_default_font").hash()
+  graphics.defaultFont=graphics.Font( id:defaultFontID)
   setFont(graphics.defaultFont)
+  fonts[defaultFontID]=loadFontFromMemory(".ttf",rsc.defaultFontData,36,0 )
+  if kirpiApp.settings.antialias==true :
+    setTextureFilter(fonts[defaultFontID].texture,TextureFilter.Bilinear)
+
+
   setColor(White)
 
   kirpiApp.load() # load 
