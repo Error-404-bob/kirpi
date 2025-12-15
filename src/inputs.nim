@@ -1,4 +1,5 @@
 import raylib as rl
+import unicode
 
 
 #KeyBoard
@@ -14,8 +15,9 @@ proc isKeyDown*(key:rl.KeyboardKey):bool =
 proc isKeyUp*(key:rl.KeyboardKey):bool =
     return rl.isKeyUp(key)
 
-proc getCharPressed*():int32 =
-    return rl.getCharPressed()
+proc getCharPressed*():Rune =
+    result=rl.getCharPressed().Rune
+
 
 #Mouse 
 proc isMouseButtonPressed*(button:rl.MouseButton):bool =
@@ -62,8 +64,15 @@ proc getGamepadAxisCount*(gamepad:int):int =
 proc getGamepadAxisMovement*(gamepad:int, axis:rl.GamepadAxis):float =
     return rl.getGamepadAxisMovement(int32(gamepad), axis)
 
-proc setGamepadMappings*(mappings:string): int32 =
-    return rl.setGamepadMappings(mappings)
+type GamepadError* = object of CatchableError
+proc setGamepadMappings*(mappings:string):int  =
+    let res=rl.setGamepadMappings(mappings)
+    if res<0 :
+        let errorMessage = "Failed to load Gamepad Mappings. Return code: " & $res
+        raise newException(GamepadError, errorMessage)
+    result=int(res)
+
+
 
 proc setGamepadVibration*(gamepad:int, leftMotor:float, rightMotor:float, duration:float) =
     rl.setGamepadVibration(int32(gamepad), float32(leftMotor), float32(rightMotor), float32(duration)) 

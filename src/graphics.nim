@@ -17,7 +17,7 @@ import triangulator
 # [ b  d  ty ]
 # [ 0  0  1  ]
 type Transform* = object
-  a,b,c,d,tx,ty: float32
+  a,b,c,d,tx,ty: float
 
 func matIdentity*(): Transform =
   result = Transform(a:1, b:0, c:0, d:1, tx:0, ty:0)
@@ -31,18 +31,18 @@ func matMul*(t1, t2: Transform): Transform =
   result.tx = t1.a*t2.tx + t1.c*t2.ty + t1.tx
   result.ty = t1.b*t2.tx + t1.d*t2.ty + t1.ty
 
-func matTranslate*(dx, dy: float32): Transform =
+func matTranslate*(dx, dy: float): Transform =
   result=Transform(a:1, b:0, c:0, d:1, tx:dx, ty:dy)
 
-func matRotate*(angle: float32): Transform =
+func matRotate*(angle: float): Transform =
   let c = cos(angle)
   let s = sin(angle)
   result=Transform(a:c, b:s, c:(-s), d:c, tx:0, ty:0)
 
-func matScale*(sx, sy: float32): Transform =
+func matScale*(sx, sy: float): Transform =
   result=Transform(a:sx, b:0, c:0, d:sy, tx:0, ty:0)
 
-func matShear*(shx, shy: float32): Transform =
+func matShear*(shx, shy: float): Transform =
   result=Transform(a:1, b:shy, c:shx, d:1, tx:0, ty:0)
 
 func matInverse*(t: Transform): Transform =
@@ -57,7 +57,7 @@ func matInverse*(t: Transform): Transform =
   result.tx = (t.c*t.ty - t.d*t.tx) * invDet
   result.ty = (t.b*t.tx - t.a*t.ty) * invDet
 
-proc newTransform*(x,y,r,sx,sy,ox,oy,kx,ky: float32): Transform =
+proc newTransform*(x,y,r,sx,sy,ox,oy,kx,ky: float): Transform =
   let cr = cos(r)
   let sr = sin(r)
 
