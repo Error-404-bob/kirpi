@@ -35,7 +35,7 @@ import kirpi
 var sampleText:Text
 
 proc load() =
-    sampleText=newText("Hello World!",getFont())
+    sampleText=newText("Hello World!",getDefaultFont())
 
 proc update(dt: float) =
     if isKeyPressed(KeyEscape):
