@@ -668,6 +668,7 @@ proc line*(points:varargs[float]) =
           s1d=prevIntersectionTestDown.get()
 
         #Implementing Caps
+        #Begin Caps
         if isClosedPoly==false :
           if i==0 :
             
@@ -691,7 +692,8 @@ proc line*(points:varargs[float]) =
             elif globalDrawState.drawerLineBeginCap==CapTypes.Square :
               s1a-=seg1Unit*halfLineWidth
               s1d-=seg1Unit*halfLineWidth
-          elif i==allPoints.len-3 :
+          #End Caps
+          if i==allPoints.len-3 :
             if globalDrawState.drawerLineEndCap==CapTypes.Round :
               let radius=halfLineWidth
               let beginAngle=rm.angle(Vector2( x: 1.0,y: 0.0), seg2Normal )

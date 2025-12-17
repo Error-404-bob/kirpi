@@ -65,12 +65,12 @@ proc getGamepadAxisMovement*(gamepad:int, axis:rl.GamepadAxis):float =
     return rl.getGamepadAxisMovement(int32(gamepad), axis)
 
 type GamepadError* = object of CatchableError
-proc setGamepadMappings*(mappings:string):int  =
+proc setGamepadMappings*(mappings:string) =
     let res=rl.setGamepadMappings(mappings)
     if res<0 :
         let errorMessage = "Failed to load Gamepad Mappings. Return code: " & $res
         raise newException(GamepadError, errorMessage)
-    result=int(res)
+    
 
 
 
