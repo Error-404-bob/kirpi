@@ -575,6 +575,10 @@ proc line*(points:varargs[float]) =
 
   var allPoints: seq[Vector2] = @[]
   for i in countup(0, points.len - 1, 2):
+    #Filtering same points
+    if i>0 :
+      if (points[i]==points[i-2] and points[i+1]==points[i-1])  :
+        continue
     allPoints.add(Vector2(x:points[i], y:points[i+1]))
 
   var tris: seq[Vector2] = @[]
@@ -619,10 +623,13 @@ proc line*(points:varargs[float]) =
         let seg1=p2-p1
         let seg1Unit=seg1.normalize()
         let seg1Normal=Vector2(x: seg1Unit.y,y: -seg1Unit.x)
+        
 
         let seg2=p3-p2
         let seg2Unit=seg2.normalize()
         let seg2Normal=Vector2(x: seg2Unit.y,y: -seg2Unit.x)
+
+        
 
         let segBetween=p3-p1
         let segBetweenPerp=Vector2(x: segBetween.y,y: -segBetween.x)
@@ -895,6 +902,7 @@ proc line*(points:varargs[float]) =
       tris.add( Vector2(x:sd.x, y: sd.y) )
       tris.add( Vector2(x:sc.x, y: sc.y))
       tris.add( Vector2(x:sa.x, y: sa.y))
+    
 
     #Drawing All Triangles
     for i in 0..<tris.len: 
