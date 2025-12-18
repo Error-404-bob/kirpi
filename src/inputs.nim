@@ -6,6 +6,9 @@ import unicode
 proc isKeyPressed*(key:rl.KeyboardKey):bool =
     return rl.isKeyPressed(key)
 
+proc getKeyPressed*():KeyboardKey =
+    return rl.getKeyPressed()
+
 proc isKeyReleased*(key:rl.KeyboardKey):bool =
     return rl.isKeyReleased(key)
 

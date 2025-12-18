@@ -215,7 +215,10 @@ isKeyDown(key:rl.KeyboardKey):bool        #checks if a key is being pressed
 
 isKeyUp(key:rl.KeyboardKey):bool      #checks if a key is not being pressed
 
-getCharPressed():int32        #get char pressed (unicode), call it multiple times for chars queued, returns 0 when the queue is empty
+getKeyPressed():KeyboardKey     #get key pressed (keycode), call it multiple times for keys queued, returns KeyboardKey.Null when the queue is empty
+
+getCharPressed():Rune     #get char pressed (unicode), call it multiple times for chars queued, returns 0.Rune when the queue is empty
+
 
 #Mouse
 isMouseButtonPressed(button:rl.MouseButton):bool   #checks if a mouse button has been pressed once
