@@ -4,7 +4,7 @@ import tables
 import raylib as rl
 import rsc
 import hashes
-import bridge
+import javascript
 
 
 #Emscripten /Web Main Loop Fix Wrapper (We don't want to use Asyncify on the web targets)
@@ -205,4 +205,4 @@ proc run*(title:string,load: proc(), update: proc(dt:float), draw: proc(), confi
 export graphics except defaultFilter,shaders,fonts
 export inputs, window
 export sound 
-export bridge
+export javascript
