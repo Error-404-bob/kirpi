@@ -1,4 +1,6 @@
-# Raylib
+#   MIT License - Copyright (c) 2025 Eray Zesen
+#   Github: https://github.com/erayzesen/kirpi
+#   License information: https://github.com/erayzesen/kirpi/blob/master/LICENSE
 
 import tables
 import raylib as rl

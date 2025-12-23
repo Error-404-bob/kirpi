@@ -1,3 +1,7 @@
+#   MIT License - Copyright (c) 2025 Eray Zesen
+#   Github: https://github.com/erayzesen/kirpi
+#   License information: https://github.com/erayzesen/kirpi/blob/master/LICENSE
+
 
 type
     JSCallback* = proc(arg: cstring) {.cdecl.}      # For JSON argument callbacks(string)
