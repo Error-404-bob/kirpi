@@ -2,6 +2,7 @@
 👀 I’m interested in graphic design, content creation, and digital marketing.
 🌱 I’m currently learning about website design and improving my skills in user experience.
 💞️ I’m looking to collaborate with clients to bring their ideas to life and am always eager to learn and grow in my field.
+
 Skills:
 -Graphic design using Adobe Creative Suite
 
